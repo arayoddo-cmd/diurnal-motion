@@ -311,7 +311,8 @@ const Stage = (() => {
   const pin1 = makePin(3); spin1.add(pin1);
   tilt1.add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 9.4, 8), basic(0xff5a5a)));
   const arr1 = arcArrow(3.45, -150, -30, 0xff9a3d, 0.08); tilt1.add(arr1);
-  [-2.2, -1.1, 0, 1.1, 2.2].forEach(y => g1.add(new THREE.ArrowHelper(V(1, 0, 0), V(-8.6, y, 0), 3.2, 0xffd34d, 0.7, 0.4)));
+  const rays = new THREE.Group(); g1.add(rays);
+  [-2.2, -1.1, 0, 1.1, 2.2].forEach(y => rays.add(new THREE.ArrowHelper(V(1, 0, 0), V(-8.6, y, 0), 3.2, 0xffd34d, 0.7, 0.4)));
 
   // ② 천구 (지구가 가운데, 별은 천구에 붙어 있음)
   // 교과서 그림처럼 자전축을 기울여요: 천구 북극(북극성)이 오른쪽(북쪽) 위 37.5°, 우리나라가 지구 꼭대기
@@ -370,13 +371,14 @@ const Stage = (() => {
       controls.minDistance = 6;
       if (S.earthCam === 'top') camera.position.set(Math.sin(23.5 * D2R) * 13, Math.cos(23.5 * D2R) * 13, 0.001);
       else camera.position.set(0, 2.2, 12.5);
-    } else if (S.view === 'sphere') camera.position.copy(DL).multiplyScalar(25); // 남이 왼쪽, 북이 오른쪽
-    else { controls.target.set(0, 1.5, 0); controls.minDistance = 10; controls.maxPolarAngle = Math.PI * 0.49; camera.position.set(19, 11, 7); }
+    } else if (S.view === 'sphere') camera.position.copy(SPH).multiplyScalar(25); // 남이 왼쪽, 북이 오른쪽
+    else { controls.target.set(0, LOOK_Y, 0); controls.minDistance = 10; controls.maxPolarAngle = Math.PI * 0.49; camera.position.copy(OUT).add(V(0, LOOK_Y, 0)); }
     controls.update();
   }
   function applyView(resetCam) {
     const look = isLook();
     g1.visible = S.view === 'earth'; g2.visible = S.view === 'sphere'; g3.visible = S.view === 'sky';
+    rays.visible = S.earthCam !== 'top';
     obs.visible = !look; shellTop.visible = !look; shellBot.visible = !look && S.below;
     groundMat.opacity = look ? 1 : S.below ? 0.45 : 0.92;
     amb.intensity = S.view === 'earth' ? 0.16 : 0.85;
@@ -406,15 +408,19 @@ const Stage = (() => {
      천구는 처음부터 교과서처럼 기울어져 있어서(우리나라가 지구 꼭대기, 지평면이 수평) 돌릴 필요 없이 이어져요.
      ① 우리나라로 다가가 지평면 보여 주기 (0~2초, 3.5초까지 멈춤)
      ② 지구는 점처럼 작아지고 지평면은 천구 한가운데로 (3.5~7초) → 하늘 보기의 '밖에서'와 똑같은 모습 */
-  const TDUR = 8.2, OUT = V(19, 9.5, 7); // OUT: '밖에서 보기' 카메라가 관측자를 바라보는 방향과 거리
-  const DL = OUT.clone().normalize();
+  // 천구 보기와 '밖에서 보기' 카메라 방향: 동쪽에서 조금 북쪽 위로 올라가 내려다봐요.
+  // (적도면과 같은 높이에서 보면 별의 길이 직선으로 보여서, 길이 타원·곡선으로 보이게 했어요. 남이 왼쪽, 북이 오른쪽)
+  const SPH = V(0.8, 0.55, -0.25).normalize();
+  // OUT: '밖에서 보기' 카메라가 관측자를 바라보는 방향과 거리, LOOK_Y: 바라보는 높이 (낮을수록 앞쪽 '동' 표시가 화면 안에 들어와요)
+  const TDUR = 8.2, OUT = SPH.clone().multiplyScalar(28), LOOK_Y = -0.8;
+  const DL = SPH;
   const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
   let TR = null, trM = 0, ER = 1.3;
   function link(dir) {
     if (TR) return;
     if (dir > 0 ? S.view !== 'sphere' : !(S.view === 'sky' && S.cam === 'out')) return;
     Object.assign(S, { playing: false, goal: null, trails: false, frame: 'sky', lat: KOREA[1] });
-    TR = { T: dir > 0 ? 0 : TDUR, dir, sr: 9, c0: dir > 0 ? camera.position.clone() : DL.clone().multiplyScalar(25), t0: dir > 0 ? controls.target.clone() : V(0, 0, 0) };
+    TR = { T: dir > 0 ? 0 : TDUR, dir, sr: 9, c0: dir > 0 ? camera.position.clone() : SPH.clone().multiplyScalar(25), t0: dir > 0 ? controls.target.clone() : V(0, 0, 0) };
     S.view = 'sphere'; applyView(false);
     controls.enabled = false; hz2.visible = true; arr2.visible = false;
   }
@@ -439,7 +445,7 @@ const Stage = (() => {
     hz2.position.set(0, Math.sin(phi), Math.cos(phi)).multiplyScalar(h);
     hzDisc.scale.setScalar((0.7 + 8.3 * trM) * sr / 9); obs2.scale.setScalar((0.14 + 1.16 * trM) * sr / 10);
     // 카메라는 관측자를 '밖에서 보기'와 같은 방향(남동쪽 위)에서 바라봐요
-    const tg = V(0, h + 1.5 * trM, 0), cp = tg.clone().addScaledVector(DL, 3.4 + (OUT.length() - 3.4) * trM);
+    const tg = V(0, h + LOOK_Y * trM, 0), cp = tg.clone().addScaledVector(DL, 3.4 + (OUT.length() - 3.4) * trM);
     camera.position.copy(TR.c0).lerp(cp, p1); camera.lookAt(TR.t0.clone().lerp(tg, p1));
     TR.sr = sr;
   }
@@ -668,20 +674,23 @@ const Stage = (() => {
       tag('천체의 일주 운동 방향 (동 → 서)', pts[12], { dy: 26, bg: '#ffd34d', fg: '#2a1c00' });
     }
     tag('지구의 자전 방향 (서 → 동)', Pv(g2.localToWorld(arr2.userData.end.clone())), { dy: 30, dx: 30, bg: '#ff9a3d', fg: '#2a1000' });
-    tag('천구', P(0, 9.6, 0), { size: 18 });
+    tag('천구', P(0, 9.6, 0), { size: 18, dy: 22 });
     const tip = spin2.localToWorld(pin2.userData.tip.clone()), n = tip.clone().normalize();
     if (n.dot(camera.position.clone().sub(tip)) > 0) tag('우리나라', Pv(tip), { dy: -18, size: 13, bg: '#ff4d5e' });
   }
   function drawEarth() {
     const w = v => tilt1.localToWorld(v.clone());
-    tag('북극 · 자전축', Pv(w(V(0, 5.0, 0))), { fg: '#ffb3b3' });
-    tag('남극', Pv(w(V(0, -5.0, 0))), { fg: '#ffb3b3' });
+    const top = S.earthCam === 'top';
+    // 북극 위에서 볼 때는 자전축이 화면 가운데 한 점으로 보여서 '북극'만 써요
+    tag(top ? '북극' : '북극 · 자전축', Pv(w(V(0, 5.0, 0))), { fg: '#ffb3b3' });
+    if (!top) tag('남극', Pv(w(V(0, -5.0, 0))), { fg: '#ffb3b3' });
     tag('서', Pv(w(arr1.userData.start.clone().multiplyScalar(1.12))), { size: 20, bg: '#ffcfb0', fg: '#3a1a00' });
     tag('동', Pv(w(arr1.userData.end.clone().multiplyScalar(1.12))), { size: 20, bg: '#ffcfb0', fg: '#3a1a00' });
     tag('지구의 자전 방향', Pv(w(arr1.userData.mid.clone().multiplyScalar(1.1))), { dy: 22, bg: '#ff9a3d', fg: '#2a1000' });
-    tag('햇빛', P(-7, 3, 0), { bg: '#ffd34d', fg: '#2a1c00' });
-    const tip = spin1.localToWorld(pin1.userData.tip.clone()), n = tip.clone().normalize();
-    if (n.dot(camera.position.clone().sub(tip)) > 0) tag('우리나라', Pv(tip), { dy: -18, size: 14, bg: '#ff4d5e' });
+    if (!top) tag('햇빛', P(-7, 3, 0), { bg: '#ffd34d', fg: '#2a1c00' });
+    // 우리나라 표시가 지구 뒤로 숨지 않았을 때만 (가장자리에 걸쳐 있어도 보이게 조금 여유를 둬요)
+    const tip = spin1.localToWorld(pin1.userData.tip.clone()), n = tip.clone().sub(tilt1.localToWorld(V(0, 0, 0))).normalize();
+    if (n.dot(camera.position.clone().sub(tip).normalize()) > -0.2) tag('우리나라', Pv(tip), { dy: -18, size: 14, bg: '#ff4d5e' });
   }
 
   /* 화면 위 글자 (경과 시간 등) */
