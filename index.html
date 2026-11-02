@@ -1,0 +1,1279 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>일주운동 관측소</title>
+<meta name="description" content="지구의 자전 방향과 태양·달·별의 일주 운동 방향을 3D로 돌려 보며 예측하고 확인하는 수업 자료">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b1a; --panel:#111934; --line:#2a3768;
+  --text:#eef2ff; --muted:#a9b4d8; --accent:#ffcf5a; --accent2:#7cc4ff;
+  --ok:#5fe0a0; --bad:#ff8a8a; --chip:#1f2b5a; --chiph:#2b3a78;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans KR",system-ui,sans-serif;line-height:1.6;min-height:100vh;-webkit-tap-highlight-color:transparent}
+#app{max-width:1280px;margin:0 auto;padding:14px 16px 60px}
+h1,h2,h3,.title{font-family:"Do Hyeon","Noto Sans KR",sans-serif;font-weight:400;letter-spacing:.5px;margin:0}
+h1{font-size:clamp(36px,6vw,58px);line-height:1.15}
+h2{font-size:26px}
+h3{font-size:22px;margin-bottom:6px}
+p{margin:.4em 0}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{background:var(--accent);color:#1b1400;border:0;border-radius:999px;padding:12px 24px;font-weight:700;font-size:17px}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--text);border:1.5px solid var(--line)}
+.btn.small{padding:7px 14px;font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.muted{color:var(--muted)}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+input{font:inherit;color:var(--text);background:#0b1230;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+input:focus{outline:2px solid var(--accent2);border-color:transparent}
+label{display:block;font-weight:700;margin:10px 0 4px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.top .grow{flex:1}
+.pill{background:var(--chip);border-radius:999px;padding:5px 12px;font-size:14px;color:var(--muted)}
+.pill b{color:var(--text)}
+
+/* 처음 화면 */
+.intro{display:grid;grid-template-columns:1.3fr 1fr;gap:22px;align-items:center;min-height:88vh}
+.intro>*{min-width:0}
+.intro-r{display:flex;flex-direction:column;gap:12px}
+.kicker{color:var(--accent2);font-weight:700;margin:0;font-size:14px}
+.lead{font-size:18px}
+.lead b{color:var(--accent)}
+@media (max-width:920px){.intro{grid-template-columns:1fr;min-height:auto}}
+
+/* 3D 화면 */
+.stage{position:relative;width:100%;height:min(66vh,640px);min-height:320px;border-radius:var(--r);overflow:hidden;background:#050914;border:1px solid var(--line);touch-action:none;user-select:none;-webkit-user-select:none}
+@media (max-width:920px){.stage{height:min(56vh,540px)}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage canvas.ov{pointer-events:none}
+.stage .hud{position:absolute;left:10px;top:10px;right:10px;pointer-events:none;font-size:14px;font-weight:700;line-height:1.4}
+.stage .hud span{display:inline-block;background:#08102ecc;border:1px solid #ffffff26;border-radius:12px;padding:5px 12px}
+.stage .hud span:empty{display:none}
+.stage .face{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);pointer-events:none;background:#08102ecc;border:1px solid #ffffff26;border-radius:999px;padding:6px 18px;font-weight:700;white-space:nowrap;font-size:clamp(14px,2.4vw,19px)}
+.stage .face:empty{display:none}
+.stage .nogl{display:flex;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;color:var(--muted)}
+
+/* 조작 버튼 */
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.group{display:flex;gap:3px;flex-wrap:wrap;align-items:center;background:#0b1230;border:1px solid var(--line);border-radius:999px;padding:3px}
+.group .lbl{font-size:13px;color:var(--muted);padding:0 6px 0 10px}
+.chip{background:var(--chip);border:1.5px solid transparent;border-radius:999px;padding:6px 14px;font-size:15px;min-height:40px}
+.chip:hover{background:var(--chiph)}
+.chip.on{background:var(--accent2);color:#06142b;font-weight:700}
+.chip.big{font-weight:700;padding:6px 20px}
+.chip.play{background:var(--accent);color:#1b1400;font-weight:700}
+.group .chip{min-height:36px;padding:4px 12px}
+input[type=range]{width:150px;accent-color:var(--accent);padding:0;border:0;background:transparent;margin:0 6px}
+.latv{font-weight:700;min-width:58px;font-size:14px;padding-right:8px}
+
+/* 수업 모드 */
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{background:var(--chip);border:1.5px solid transparent;border-radius:12px;padding:8px 14px;font-weight:700;font-size:15px}
+.tab.on{border-color:var(--accent);color:var(--accent);background:var(--chiph)}
+.lesson{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:14px;align-items:start}
+.lesson>*{min-width:0}
+@media (max-width:920px){.lesson{grid-template-columns:1fr}}
+.concept ol{padding-left:22px;margin:8px 0}
+.concept li{margin:10px 0;font-size:17px;line-height:2}
+.blank{display:inline-block;min-width:54px;text-align:center;border:0;border-bottom:2.5px solid var(--accent);background:#ffcf5a14;color:var(--accent);padding:0 8px;margin:0 2px;font-weight:700;border-radius:6px 6px 0 0;line-height:1.6}
+button.blank:not(.show){color:transparent}
+.blank.ok{border-color:var(--ok);color:var(--ok)}
+/* 수업 모드: TV로 함께 보도록 3D 화면을 크게, 정리 카드는 아래에 큰 글씨로 */
+.cl-stage .stage{height:max(420px,calc(100vh - 200px))}
+.cl-stage .chip{font-size:17px;min-height:46px}
+.cl-stage .group .chip{min-height:42px}
+.concept.big{margin-top:16px}
+.concept.big h3{font-size:clamp(24px,2.6vw,34px)}
+.concept.big li{font-size:clamp(22px,2.4vw,32px);margin:12px 0}
+.concept.big .ask{font-size:clamp(19px,1.9vw,26px)}
+.ask{background:#1c2a5c;border-left:4px solid var(--accent);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:15px}
+.ask b{color:var(--accent)}
+
+/* 탐사 모드 */
+.mcards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media (max-width:700px){.mcards{grid-template-columns:1fr}}
+.mcard{display:flex;flex-direction:column;gap:8px}
+.mcard .n{font-family:"Do Hyeon";color:var(--accent);font-size:15px}
+.mcard.lock{opacity:.5}
+.mcard .row{margin-top:auto}
+.st-done{color:var(--ok);font-weight:700}
+.check{list-style:none;padding:0;margin:6px 0 12px}
+.check li{padding:3px 0}
+.check li.ok{color:var(--ok)}
+.q{border-top:1px solid var(--line);padding:12px 0}
+.q:first-of-type{border-top:0}
+.q.locked{opacity:.4}
+.q .s{font-size:17px}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.opt{background:var(--chip);border:1.5px solid var(--line);border-radius:999px;padding:7px 16px;font-size:15px}
+.opt:hover{background:var(--chiph)}
+.opt:disabled{cursor:default}
+.opt.no{opacity:.35;text-decoration:line-through;pointer-events:none}
+.opt.sel{background:var(--accent);color:#1b1400;border-color:var(--accent);opacity:1}
+.fb{font-size:15px;margin-top:6px}
+.fb.ok{color:var(--ok)}
+.fb.bad{color:var(--bad)}
+.fb.ex{color:var(--text);background:#16224a;border-radius:8px;padding:6px 10px}
+.done{background:#173a2c;border:1px solid var(--ok);border-radius:12px;padding:12px 14px;margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.done b{flex:1;min-width:160px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.stp{background:var(--chip);border:1.5px solid transparent;border-radius:999px;padding:5px 12px;font-size:14px}
+.stp.on{border-color:var(--accent);color:var(--accent)}
+.stp.ok::after{content:" ✓";color:var(--ok)}
+.stp:disabled{opacity:.35;cursor:not-allowed}
+.popts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.popt{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--chip);border:2px solid transparent;border-radius:14px;padding:8px 4px;font-size:13px;word-break:keep-all;text-align:center;line-height:1.35}
+.popt svg{width:56px;height:56px}
+.popt:hover{background:var(--chiph)}
+.popt:disabled{cursor:default}
+.popt.no{opacity:.35;border-color:var(--bad)}
+.popt.sel{border-color:var(--ok);background:#173a2c}
+.quiz{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.quiz>*{min-width:0}
+@media (max-width:820px){.quiz{grid-template-columns:1fr}}
+.quiz .q{border-top:0;padding:0}
+svg.fig{width:100%;max-height:250px;border-radius:10px;background:#0b1230;display:block;margin-bottom:10px}
+.score{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:16px;margin:10px 0}
+.score dt{color:var(--muted)}
+.score dd{margin:0;font-weight:700}
+
+/* 교사 화면 */
+.tstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.tstats div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--muted)}
+.tstats b{display:block;font-family:"Do Hyeon";font-size:28px;color:var(--text)}
+.tbl-wrap{overflow-x:auto}
+.ttbl{border-collapse:collapse;width:100%;font-size:14px;white-space:nowrap}
+.ttbl th,.ttbl td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+.ttbl th{color:var(--muted);font-weight:500}
+.tok{color:var(--ok);font-weight:700}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+'use strict';
+/* ───────── 설정 ─────────
+   SUBMIT_URL: 태양계 탐사대와 같은 Apps Script 주소. 결과는 같은 구글 시트의 '일주운동 현황' 탭에 모여요.
+   (Apps Script를 이 폴더의 apps-script.gs로 바꾸고 새 버전으로 배포해야 저장돼요. README 참고) */
+const CONFIG = {
+  SUBMIT_URL: 'https://script.google.com/macros/s/AKfycbwgcIJOTfz5PJHlA4DWjsth69Wyt_SMK7ea1NpXJUUEUCmBmyYRkA0Vpjh5du_2SHI/exec',
+  LESSON: '일주운동'
+};
+const D2R = Math.PI / 180;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const fmtH = t => (Math.round(t * 10) / 10) + '시간';
+// 하루 중 시각을 '저녁 8시', '새벽 2시 30분'처럼 표시
+function clockK(h) {
+  h = ((h % 24) + 24) % 24;
+  const hh = Math.floor(h + 1e-6), mm = Math.floor((h - hh) * 6 + 1e-6) * 10;
+  const part = hh === 0 ? '밤' : hh < 5 ? '새벽' : hh < 12 ? '오전' : hh === 12 ? '낮' : hh < 18 ? '오후' : hh < 21 ? '저녁' : '밤';
+  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+  return `${part} ${h12}시${mm ? ' ' + mm + '분' : ''}`;
+}
+
+/* ───────── 하늘의 별 ─────────
+   [적경(시), 적위(°), 등급]. 별자리는 실제 위치에 가깝게, 나머지 별은 고르게 흩뿌렸어요. */
+const LST0 = 3; // 시작할 때 남쪽 하늘 한가운데(자오선)에 오는 적경
+const CONSTS = [
+  { name: '북두칠성', label: 3, stars: [[11.06, 61.75, 1.8], [11.03, 56.38, 2.3], [11.90, 53.69, 2.4], [12.26, 57.03, 3.3], [12.90, 55.96, 1.8], [13.40, 54.93, 2.2], [13.79, 49.31, 1.9]], lines: [[0, 1], [1, 2], [2, 3], [3, 0], [3, 4], [4, 5], [5, 6]] },
+  { name: '카시오페이아자리', label: 2, stars: [[0.15, 59.15, 2.3], [0.68, 56.54, 2.2], [0.95, 60.72, 2.5], [1.43, 60.24, 2.7], [1.91, 63.67, 3.4]], lines: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+  { name: '오리온자리', label: 3, stars: [[5.92, 7.41, 0.5], [5.42, 6.35, 1.6], [5.53, -0.30, 2.2], [5.60, -1.20, 1.7], [5.68, -1.94, 1.8], [5.80, -9.67, 2.1], [5.24, -8.20, 0.3]], lines: [[0, 1], [1, 2], [0, 4], [2, 3], [3, 4], [4, 5], [2, 6]] }
+];
+const STARS = [];
+function addStar(ra, dec, mag, con) { STARS.push({ h0: (LST0 - ra) * 15 * D2R, dec: dec * D2R, mag, con, p: null }); return STARS.length - 1; }
+(() => {
+  const r = rng(7);
+  for (let i = 0; i < 300; i++) addStar(r() * 24, Math.asin(2 * r() - 1) / D2R, 5 - 2.6 * Math.pow(r(), 3), null);
+  CONSTS.forEach(c => { c.idx = c.stars.map(s => addStar(s[0], s[1], s[2], c)); });
+})();
+const POLARIS = addStar(2.53, 89.26, 2.0, 'polaris');
+const SUN_H0 = -90 * D2R; // 태양·달은 시작할 때 정확히 동쪽 지평선에서 떠요
+
+/* ───────── 지구 지도 (경도, 위도) ─────────
+   대륙을 단순하게 그린 것이에요. 방향을 알아보는 데 쓰는 그림이라 실제 해안선과는 조금 달라요. */
+const LAND = [
+  [[-9,37],[-9,43],[-2,43.5],[-4.5,48],[-1,49.5],[2,51],[5,53],[8,54],[8,57],[10,59],[5,62],[10,64],[15,68],[20,70],[28,71],[33,69],[41,67],[44,68],[53,68],[60,69],[68,72],[73,72],[80,73],[90,75],[100,77],[112,74],[125,73],[140,72],[150,71],[160,70],[170,70],[180,68.5],[180,65],[178,62],[170,60],[163,58],[162,54],[157,51],[156,57],[150,59],[143,59],[137,54],[141,52],[140,48],[135,43],[132,43],[130,42],[129.5,40],[128,38.5],[129,35.5],[127,34.5],[126,35],[126.5,37.5],[125,39.5],[122,40],[121,39],[122,37],[119,35],[121,32],[122,30],[120,26],[117,23.5],[113,22],[110,21.5],[108,21.5],[106,18],[109,12],[105,8.6],[102.5,12],[100,13.5],[100,9],[103,5],[104,1.4],[101,3],[99,8],[98,15],[97,17],[94,19],[91.5,22.5],[88,22],[87,21],[85,19.5],[80,15],[80,10],[77.5,8],[76,10],[73,16],[72.6,21],[70,22.5],[67,24.5],[62,25],[57,25.7],[56.3,27],[54,26.7],[50.5,30],[48,30],[50,26],[51.5,24],[54,24],[56,26],[57.5,23.5],[59.5,22.5],[57,18.9],[52,16],[48,14],[44,12.7],[43,14],[42.5,16.5],[39,21.5],[35,28],[34.5,29.5],[34,31],[35,32.5],[36,35],[36,36.7],[32,36.2],[28,36.7],[26.3,38.3],[26,40],[23,40.5],[22.5,37],[21,38.5],[19.5,40.5],[19,42],[16,43.5],[13.5,45.5],[12.3,44.5],[14,42],[16,40],[16.5,38],[15.6,38],[14,40.5],[12,42],[10.5,43.8],[9,44.4],[7.5,43.8],[4,43.4],[3,42],[0.7,40.7],[0,38.8],[-0.7,37.6],[-2,36.7],[-5.4,36.1],[-6.3,36.8],[-7.4,37.2]],
+  [[-17,21],[-16.5,24],[-13,27.5],[-9.8,30],[-9.3,32.5],[-6.8,34],[-5.9,35.8],[-2,35.1],[1,36.5],[5,36.8],[10,37.2],[11,35.5],[10,34],[11.2,33.2],[15,32.3],[19,30.3],[20,31.8],[23,32.6],[25,31.8],[29,30.9],[32,31.3],[34.2,31.2],[34.5,28],[33,28],[35.5,24],[37,21],[38.5,18],[40,15.5],[43.3,12.6],[44,10.5],[51.2,11.8],[51,10.4],[48,5],[44,1],[41.5,-1.7],[40,-3.5],[39,-6.5],[39.5,-10],[40.5,-15],[37,-17.8],[35.4,-21.5],[35.5,-24],[32.7,-26],[32.5,-29],[30,-31.3],[27,-33.6],[22,-34],[20,-34.8],[18.4,-34],[17.8,-31],[15,-26.6],[14.5,-22.5],[11.8,-17.3],[13.6,-12],[13.2,-9],[12.2,-6],[9,-1],[9.5,2.5],[8.5,4.5],[6,4.3],[4.5,6.3],[1.5,6.1],[-2,4.8],[-7.5,4.4],[-10.5,6.5],[-13,8],[-13.4,9.5],[-15,11],[-16.7,12.5],[-17.4,14.7],[-16.5,16],[-16.2,19.5]],
+  [[44,-25],[47,-25],[50.4,-15.5],[49.5,-12],[48,-13.5],[44,-17],[43.5,-22]],
+  [[-168,65.5],[-163,67],[-166,68.8],[-156,71.3],[-141,69.7],[-128,70],[-115,68.5],[-100,68],[-94,71.8],[-86,68.5],[-81,69.5],[-75,68],[-67,63],[-64,60],[-61,56],[-56,52],[-60,50],[-66,49],[-64,47],[-61,45],[-66,44],[-70,41.6],[-74,40.5],[-76,37],[-75.5,35.3],[-78.5,33.8],[-81,31.5],[-80,27],[-80.4,25.2],[-81.8,26.5],[-83,29],[-85,29.8],[-89,30.3],[-90,29],[-94,29.6],[-97.2,27.5],[-97.5,25],[-97.8,22],[-96.5,19.3],[-94.5,18.2],[-91,18.8],[-90.4,21],[-87,21.5],[-87.6,18],[-88.3,16],[-84,15.8],[-83.5,11],[-81.8,9],[-79.5,9.5],[-77.4,8.7],[-77.3,7.8],[-78.5,7.5],[-80.4,7.3],[-81.5,7.8],[-85.7,10.2],[-87.5,12.9],[-91.4,13.9],[-94,16],[-96.5,15.7],[-101,17.5],[-105.5,20.5],[-105.3,23.2],[-109.5,26.7],[-112.3,29.5],[-114.7,31.6],[-117.1,32.5],[-120.6,34.6],[-122.5,37.5],[-124,40.4],[-124.5,43],[-124,46.2],[-124.7,48.4],[-127.5,50.5],[-130,54],[-133,57.5],[-137.5,58.8],[-141,60],[-147,60.8],[-151.5,59.2],[-154,57],[-158,56.6],[-162,55],[-158,58.6],[-162,59.9],[-165,62],[-164.7,63.2],[-161,64.3],[-166,64.6]],
+  [[-120,70],[-95,70],[-80,73],[-80,76],[-95,80],[-120,77]],
+  [[-77.3,8.6],[-75.5,10.6],[-71.3,12.3],[-70,11.5],[-63,10.7],[-61,10.2],[-57,6],[-52,5],[-50,1.7],[-48.5,-1],[-44.5,-2.5],[-40,-2.9],[-35.3,-5.2],[-34.8,-7.5],[-37,-11],[-39,-13.5],[-39,-17.6],[-40.7,-21.7],[-43,-23],[-48.5,-26.2],[-48.6,-28.5],[-52,-32.2],[-53.4,-33.7],[-57.5,-34.8],[-57.2,-36.3],[-58.4,-38.3],[-62.3,-38.8],[-62.2,-40.8],[-65,-41],[-63.8,-42.2],[-65.2,-45],[-67.6,-46.4],[-65.8,-47.8],[-69.1,-50.3],[-68.2,-52.5],[-71,-53.8],[-74.6,-52.5],[-75.5,-48.7],[-74,-43.5],[-73.6,-37.2],[-71.4,-32.4],[-71.4,-28.8],[-70.4,-23.5],[-70.3,-18.4],[-71.4,-17.8],[-76.2,-13.6],[-77.7,-11],[-79.8,-7.2],[-81.2,-5.9],[-80.3,-3.4],[-80,-2.2],[-80.9,-1],[-80,0.8],[-78.8,1.4],[-77.9,2.7],[-77.1,3.8],[-77.5,6.7]],
+  [[113.4,-22],[114.2,-26.3],[115,-30],[115.7,-33.5],[118,-35],[122,-34],[123.6,-33.9],[126.2,-32.2],[131.3,-31.5],[134.3,-33],[135.9,-35],[137.9,-33.6],[138.4,-35.1],[140,-37.4],[143.8,-38.8],[146.3,-39],[150,-37.4],[150.7,-34.5],[152.9,-31.6],[153.6,-28],[153,-25.5],[150.5,-22.4],[149,-20.6],[146.4,-19],[145.4,-15.4],[143.6,-14],[142.5,-10.7],[141.6,-12.9],[141.5,-15],[140.2,-17.7],[136.8,-15.9],[135.4,-14.7],[136.9,-12.3],[132.6,-11.5],[131,-12.2],[129.4,-14.4],[126.1,-14.3],[125.1,-16.2],[122.2,-18.2],[121,-19.5],[117.2,-20.6]],
+  [[130,31.2],[131.4,33.6],[135,34],[136.8,34.7],[139.8,35],[140.9,36.9],[141.5,38.6],[142,40],[141.4,41.4],[140,41.5],[140.2,40],[139.9,38],[138.6,37.3],[137,37],[136,35.8],[133,35.5],[131,34.3],[130,33.5]],
+  [[140,41.5],[141.3,41.4],[145.5,43.3],[144.5,44],[141.7,45.4],[141.3,43.3],[140,42.5]],
+  [[-5.7,50],[1.4,51.2],[1.7,52.7],[0,53.5],[-1.6,55.5],[-2,57],[-1.8,57.6],[-3.3,58.6],[-5,58.6],[-6.2,57.5],[-5.6,56.3],[-4.9,55],[-3,54.8],[-3.3,53.4],[-4.6,52.8],[-5.3,51.7],[-3.4,51.4]],
+  [[-6,52.2],[-6,54],[-7.5,55.2],[-10,54.2],[-10.3,52],[-9.5,51.5]],
+  [[95.3,5.5],[98,4],[104.5,-2.5],[106,-5.8],[101.5,-3],[98.6,0],[95.5,3]],
+  [[109,1.5],[110,-2.5],[116,-3.8],[118,0.8],[119,5],[116.7,6.9],[114,4.5],[110,1.5]],
+  [[131,-1],[138,-1.5],[144,-3.8],[147,-6],[150,-10.5],[145,-8],[141,-9],[137.5,-5.5],[132,-3]],
+  [[105.2,-6.8],[108.5,-6.5],[112,-6.9],[114.5,-7.8],[110,-8.1],[106,-7.4]],
+  [[172.6,-34.4],[174.6,-36.9],[178.5,-37.6],[176.8,-40.2],[174.6,-41.3],[173,-41.2],[174,-38.7]],
+  [[172.6,-40.5],[174.2,-41.8],[171.3,-44.3],[169,-46.6],[166.5,-46],[168.4,-44]]
+];
+const WATER = [
+  [[-95,58],[-88,56],[-80,52],[-78,58],[-78,63],[-87,64],[-94,61]],
+  [[47,45],[53,47],[54,41],[54,37],[49,37.5],[49.5,41],[47,43]],
+  [[28,41.3],[28,44],[30,46],[34,46.2],[38,47],[39.5,44],[41.5,41.5],[36,41.6],[31,41.1]]
+];
+const GREENLAND = [[-73,78],[-60,82],[-40,83.5],[-22,82],[-18,78],[-22,72],[-24,69],[-32,68],[-40,65],[-43,60],[-48,61],[-52,65],[-54,68],[-56,72],[-66,76]];
+const KOREA = [127, 37.5];
+
+/* ───────── 3D 화면 ─────────
+   한 개의 화면을 모든 쪽에서 같이 써요.
+   view: 'earth'(우주에서 본 지구) · 'sphere'(천구) · 'sky'(지평선 위 관측자)
+   하늘의 별·태양·달·자취·글자는 위에 겹친 2D 캔버스에 그려서 태블릿에서도 선이 또렷해요. */
+const Stage = (() => {
+  const S = { view: 'sphere', earthCam: 'side', frame: 'sky', lat: 37.5, target: 'star', cam: 'out', az: 180, pitch: 25,
+    trails: false, arrows: true, below: false, polar: false, playing: false, speed: 1, t: 0, t0: 0, goal: null, rate: 2.5 };
+  const SPEEDS = [0.25, 0.8, 2.5]; // 1초에 흐르는 시간
+  const watch = {}, hooks = { watch: null, change: null };
+  const el = document.createElement('div'); el.className = 'stage';
+  if (!window.THREE || !THREE.OrbitControls) {
+    el.innerHTML = '<div class="nogl">3D 화면을 불러오지 못했어요.<br>인터넷 연결을 확인하고 새로고침해 주세요.</div>';
+    const noop = () => {};
+    return { ok: false, el, S, watch, hooks, SPEEDS, set: o => Object.assign(S, o), play: noop, step: noop, reset: noop, replay: noop, trailReset: noop, preset: noop };
+  }
+  el.innerHTML = '<canvas class="gl"></canvas><canvas class="ov"></canvas><div class="hud"><span></span></div><div class="face"></div>';
+  const glc = el.querySelector('.gl'), ov = el.querySelector('.ov'), ctx = ov.getContext('2d');
+  const hudEl = el.querySelector('.hud span'), faceEl = el.querySelector('.face');
+  const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 400);
+  const controls = new THREE.OrbitControls(camera, glc);
+  controls.enableDamping = true; controls.dampingFactor = 0.12; controls.enablePan = false; controls.rotateSpeed = 0.6;
+  const amb = new THREE.AmbientLight(0xffffff, 0.2); scene.add(amb);
+  const sunL = new THREE.DirectionalLight(0xffffff, 1.1); scene.add(sunL);
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const basic = (color, o) => new THREE.MeshBasicMaterial(Object.assign({ color }, o || {}));
+
+  function earthTexture() {
+    const c = document.createElement('canvas'); c.width = 2048; c.height = 1024;
+    const g = c.getContext('2d');
+    const P = (lo, la) => [(lo + 180) / 360 * 2048, (90 - la) / 180 * 1024];
+    const poly = (pts, fill) => { g.beginPath(); pts.forEach((p, i) => { const [x, y] = P(p[0], p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.fillStyle = fill; g.fill(); };
+    g.fillStyle = '#1f5fae'; g.fillRect(0, 0, 2048, 1024);
+    LAND.forEach(p => poly(p, '#4f9a55'));
+    WATER.forEach(p => poly(p, '#1f5fae'));
+    poly(GREENLAND, '#e6eff4');
+    g.fillStyle = '#e6eff4'; g.fillRect(0, P(0, -68)[1], 2048, 1024);
+    g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = 2;
+    for (let lo = -180; lo <= 180; lo += 30) { const x = P(lo, 0)[0]; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 1024); g.stroke(); }
+    for (let la = -60; la <= 60; la += 30) { const y = P(0, la)[1]; g.beginPath(); g.moveTo(0, y); g.lineTo(2048, y); g.stroke(); }
+    g.strokeStyle = 'rgba(255,240,150,.7)'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, 512); g.lineTo(2048, 512); g.stroke();
+    return new THREE.CanvasTexture(c);
+  }
+  // 위도·경도 → 구 위의 점 (three.js 구의 지도 붙이는 방식과 맞춤: 경도 0°는 +x, 동경 90°는 -z)
+  const lonlat = (lo, la, r) => V(Math.cos(la * D2R) * Math.cos(lo * D2R) * r, Math.sin(la * D2R) * r, -Math.cos(la * D2R) * Math.sin(lo * D2R) * r);
+  function makePin(r) {
+    const g = new THREE.Group(), n = lonlat(KOREA[0], KOREA[1], 1), len = r * 0.22;
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.012, r * 0.012, len, 8), basic(0xffffff));
+    stick.position.copy(n.clone().multiplyScalar(r + len / 2)); stick.quaternion.setFromUnitVectors(V(0, 1, 0), n);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(r * 0.055, 16, 8), basic(0xff4d5e));
+    head.position.copy(n.clone().multiplyScalar(r + len));
+    g.add(stick, head); g.userData = { tip: head.position.clone(), n };
+    return g;
+  }
+  // 적도면(xz)에 놓인 휘어진 화살표. 각도는 위에서 볼 때 시계 반대 방향이 + (지구 자전 방향)
+  function arcArrow(r, a0, a1, color, th) {
+    const P = s => V(r * Math.cos(s * D2R), 0, -r * Math.sin(s * D2R));
+    const pts = []; for (let i = 0; i <= 40; i++) pts.push(P(a0 + (a1 - a0) * i / 40));
+    const mat = basic(color), g = new THREE.Group();
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 60, th, 8, false), mat));
+    const end = P(a1), dir = end.clone().sub(P(a1 - Math.sign(a1 - a0) * 2)).normalize();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(th * 3.2, th * 9, 16), mat);
+    cone.position.copy(end).addScaledVector(dir, th * 3); cone.quaternion.setFromUnitVectors(V(0, 1, 0), dir);
+    g.add(cone); g.userData = { start: P(a0), end, mid: P((a0 + a1) / 2) };
+    return g;
+  }
+  const earthMat = new THREE.MeshLambertMaterial({ map: earthTexture() });
+
+  // ① 우주에서 본 지구 (자전축 23.5° 기울임, 햇빛은 왼쪽에서)
+  const g1 = new THREE.Group(); scene.add(g1);
+  // 천구 보기와 같은 쪽으로 기울여요: 북극이 오른쪽 위
+  const tilt1 = new THREE.Group(); tilt1.rotation.z = -23.5 * D2R; g1.add(tilt1);
+  const spin1 = new THREE.Group(); tilt1.add(spin1);
+  spin1.add(new THREE.Mesh(new THREE.SphereGeometry(3, 64, 32), earthMat));
+  const pin1 = makePin(3); spin1.add(pin1);
+  tilt1.add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 9.4, 8), basic(0xff5a5a)));
+  const arr1 = arcArrow(3.45, -150, -30, 0xff9a3d, 0.08); tilt1.add(arr1);
+  [-2.2, -1.1, 0, 1.1, 2.2].forEach(y => g1.add(new THREE.ArrowHelper(V(1, 0, 0), V(-8.6, y, 0), 3.2, 0xffd34d, 0.7, 0.4)));
+
+  // ② 천구 (지구가 가운데, 별은 천구에 붙어 있음)
+  // 교과서 그림처럼 자전축을 기울여요: 천구 북극(북극성)이 오른쪽(북쪽) 위 37.5°, 우리나라가 지구 꼭대기
+  const TILT2 = (KOREA[1] - 90) * D2R;
+  const g2 = new THREE.Group(); g2.rotation.x = TILT2; scene.add(g2);
+  const spin2 = new THREE.Group(); g2.add(spin2);
+  spin2.add(new THREE.Mesh(new THREE.SphereGeometry(1.2, 48, 24), earthMat));
+  const pin2 = makePin(1.2); spin2.add(pin2);
+  g2.add(new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 18, 8), basic(0xff5a5a)));
+  const arr2 = arcArrow(1.6, -150, -30, 0xff9a3d, 0.045); g2.add(arr2);
+  const shell2 = new THREE.Mesh(new THREE.SphereGeometry(9, 48, 24), basic(0x3d6bff, { transparent: true, opacity: 0.09, side: THREE.BackSide, depthWrite: false })); g2.add(shell2);
+
+  // ③ 지평선 위 관측자 (x=동, y=천정, z=남, -z=북)
+  const g3 = new THREE.Group(); scene.add(g3);
+  const groundMat = basic(0x2c6a3c, { transparent: true, opacity: 0.92, side: THREE.DoubleSide });
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(10, 96), groundMat); ground.rotation.x = -Math.PI / 2; g3.add(ground);
+  (() => { // 지평선 둘레의 낮은 산
+    const N = 160, pos = [], idx = [], r = rng(3);
+    let h = 0.35;
+    for (let i = 0; i <= N; i++) {
+      const a = i / N * Math.PI * 2; h = clamp(h + (r() - 0.5) * 0.12, 0.15, 0.6);
+      const hh = i === N ? pos[4] : h;
+      pos.push(9.95 * Math.cos(a), 0, 9.95 * Math.sin(a), 9.95 * Math.cos(a), hh, 9.95 * Math.sin(a));
+      if (i < N) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx);
+    g3.add(new THREE.Mesh(geo, basic(0x10261a, { side: THREE.DoubleSide })));
+  })();
+  (() => { // 동서·남북 선
+    const m = new THREE.LineDashedMaterial({ color: 0xd8f0dc, dashSize: 0.4, gapSize: 0.3, transparent: true, opacity: 0.7 });
+    [[V(-10, 0.02, 0), V(10, 0.02, 0)], [V(0, 0.02, -10), V(0, 0.02, 10)]].forEach(p => { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(p), m); l.computeLineDistances(); g3.add(l); });
+  })();
+  const shellMat = basic(0x8fb8ff, { transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false });
+  const shellTop = new THREE.Mesh(new THREE.SphereGeometry(10, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), shellMat); g3.add(shellTop);
+  const shellBot = new THREE.Mesh(new THREE.SphereGeometry(10, 48, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), basic(0x8fb8ff, { transparent: true, opacity: 0.05, side: THREE.DoubleSide, depthWrite: false })); g3.add(shellBot);
+  const obs = new THREE.Group(); g3.add(obs);
+  (() => {
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.8, 16), new THREE.MeshLambertMaterial({ color: 0x5d8ff0 })); body.position.y = 1.0;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 16, 12), new THREE.MeshLambertMaterial({ color: 0xffd2a8 })); head.position.y = 1.62;
+    obs.add(body, head);
+    [-0.1, 0.1].forEach(x => { const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.6, 8), new THREE.MeshLambertMaterial({ color: 0x2d3c66 })); leg.position.set(x, 0.3, 0); obs.add(leg); });
+    obs.scale.setScalar(1.3);
+  })();
+  // 천구 → 지평선 하늘로 이어 주는 장면에서 쓰는 우리나라 지평면 (지구 표면에 닿아 있음)
+  const hz2 = new THREE.Group(); g2.add(hz2); hz2.visible = false; hz2.rotation.x = (90 - KOREA[1]) * D2R;
+  const hzDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 64), basic(0x2c6a3c, { transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false }));
+  hzDisc.rotation.x = -Math.PI / 2; hz2.add(hzDisc);
+  const obs2 = obs.clone(); hz2.add(obs2);
+
+  /* 보기 바꾸기 */
+  const isLook = () => S.view === 'sky' && S.cam === 'look';
+  const defPitch = () => S.az === 0 ? clamp(S.lat, 10, 78) : 25;
+  function preset() {
+    controls.target.set(0, 0, 0); controls.minDistance = 4; controls.maxDistance = 60; controls.maxPolarAngle = Math.PI;
+    if (S.view === 'earth') {
+      controls.minDistance = 6;
+      if (S.earthCam === 'top') camera.position.set(Math.sin(23.5 * D2R) * 13, Math.cos(23.5 * D2R) * 13, 0.001);
+      else camera.position.set(0, 2.2, 12.5);
+    } else if (S.view === 'sphere') camera.position.copy(DL).multiplyScalar(25); // 남이 왼쪽, 북이 오른쪽
+    else { controls.target.set(0, 1.5, 0); controls.minDistance = 10; controls.maxPolarAngle = Math.PI * 0.49; camera.position.set(19, 11, 7); }
+    controls.update();
+  }
+  function applyView(resetCam) {
+    const look = isLook();
+    g1.visible = S.view === 'earth'; g2.visible = S.view === 'sphere'; g3.visible = S.view === 'sky';
+    obs.visible = !look; shellTop.visible = !look; shellBot.visible = !look && S.below;
+    groundMat.opacity = look ? 1 : S.below ? 0.45 : 0.92;
+    amb.intensity = S.view === 'earth' ? 0.16 : 0.85;
+    sunL.intensity = S.view === 'earth' ? 1.15 : 0.35;
+    if (S.view === 'earth') sunL.position.set(-20, 0, 0); else sunL.position.set(5, 8, 10);
+    camera.fov = look ? 72 : 45; camera.updateProjectionMatrix();
+    controls.enabled = !look;
+    if (resetCam && !look) preset();
+  }
+  function resetTime() { S.t = 0; S.t0 = 0; S.goal = null; }
+  function set(o) {
+    if (TR) endLink(false);
+    const pv = S.view, pc = S.cam, pe = S.earthCam, pt = S.target;
+    Object.assign(S, o);
+    if (('az' in o || 'lat' in o) && !('pitch' in o)) S.pitch = defPitch();
+    if (S.view !== pv || S.target !== pt) resetTime();
+    applyView(S.view !== pv || S.cam !== pc || S.earthCam !== pe);
+  }
+  function play() { if (TR) return; S.goal = null; S.playing = !S.playing; }
+  function step(h) { if (TR) return; S.playing = false; S.goal = Math.round((S.goal == null ? S.t : S.goal) + h); S.rate = 2.5; }
+  function reset() { resetTime(); S.playing = false; }
+  // 처음부터 h시간 동안 자취를 남기며 보여 줘요 (예측 확인용)
+  function replay(h, rate) { if (TR) endLink(false); resetTime(); S.playing = false; S.trails = true; S.arrows = true; S.goal = h; S.rate = rate || 1.2; }
+  function trailReset() { S.t0 = S.t; }
+
+  /* 천구 ↔ 지평선 하늘 잇기 (dir 1: 천구 → 밖에서 본 우리나라 하늘, -1: 거꾸로)
+     천구는 처음부터 교과서처럼 기울어져 있어서(우리나라가 지구 꼭대기, 지평면이 수평) 돌릴 필요 없이 이어져요.
+     ① 우리나라로 다가가 지평면 보여 주기 (0~2초, 3.5초까지 멈춤)
+     ② 지구는 점처럼 작아지고 지평면은 천구 한가운데로 (3.5~7초) → 하늘 보기의 '밖에서'와 똑같은 모습 */
+  const TDUR = 8.2, OUT = V(19, 9.5, 7); // OUT: '밖에서 보기' 카메라가 관측자를 바라보는 방향과 거리
+  const DL = OUT.clone().normalize();
+  const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+  let TR = null, trM = 0, ER = 1.3;
+  function link(dir) {
+    if (TR) return;
+    if (dir > 0 ? S.view !== 'sphere' : !(S.view === 'sky' && S.cam === 'out')) return;
+    Object.assign(S, { playing: false, goal: null, trails: false, frame: 'sky', lat: KOREA[1] });
+    TR = { T: dir > 0 ? 0 : TDUR, dir, sr: 9, c0: dir > 0 ? camera.position.clone() : DL.clone().multiplyScalar(25), t0: dir > 0 ? controls.target.clone() : V(0, 0, 0) };
+    S.view = 'sphere'; applyView(false);
+    controls.enabled = false; hz2.visible = true; arr2.visible = false;
+  }
+  function endLink(done) {
+    const tr = TR; TR = null; trM = 0; ER = 1.3;
+    hz2.visible = false; arr2.visible = true;
+    spin2.scale.setScalar(1); shell2.scale.setScalar(1);
+    // 확대가 끝나면 별만 천천히 돌고 북극성 고도만 보여요. 방향 화살표는 선생님이 버튼으로 켜요
+    if (done && tr.dir > 0) Object.assign(S, { view: 'sky', cam: 'out', target: 'star', below: true, polar: true, arrows: false, trails: false, playing: true, speed: 1 });
+    applyView(true);
+    if (hooks.change) setTimeout(() => hooks.change(done ? (tr.dir > 0 ? 'toSky' : 'toSphere') : 'link'));
+  }
+  function linkFrame(dt) {
+    TR.T += dt * TR.dir;
+    if (TR.dir > 0 ? TR.T >= TDUR : TR.T <= 0) { endLink(true); return; }
+    const T = TR.T, p1 = ease(T / 2);
+    trM = ease((T - 3.5) / 3.5);
+    const phi = KOREA[1] * D2R, es = 1 - 0.97 * trM, sr = 9 + trM;
+    spin2.scale.setScalar(es); shell2.scale.setScalar(sr / 9); ER = 1.3 * es;
+    // 지평면 중심: 우리나라 지표면(지구 꼭대기) → 천구 중심
+    const h = 1.2 * es * (1 - trM);
+    hz2.position.set(0, Math.sin(phi), Math.cos(phi)).multiplyScalar(h);
+    hzDisc.scale.setScalar((0.7 + 8.3 * trM) * sr / 9); obs2.scale.setScalar((0.14 + 1.16 * trM) * sr / 10);
+    // 카메라는 관측자를 '밖에서 보기'와 같은 방향(남동쪽 위)에서 바라봐요
+    const tg = V(0, h + 1.5 * trM, 0), cp = tg.clone().addScaledVector(DL, 3.4 + (OUT.length() - 3.4) * trM);
+    camera.position.copy(TR.c0).lerp(cp, p1); camera.lookAt(TR.t0.clone().lerp(tg, p1));
+    TR.sr = sr;
+  }
+
+  /* 고개 돌리기 (관측자 시점에서 화면을 밀면) */
+  let drag = null;
+  glc.addEventListener('pointerdown', e => { if (!isLook()) return; drag = { x: e.clientX, y: e.clientY, az: S.az, p: S.pitch }; try { glc.setPointerCapture(e.pointerId); } catch (err) {} });
+  glc.addEventListener('pointermove', e => { if (!drag) return; S.az = ((drag.az - (e.clientX - drag.x) * 0.25) % 360 + 360) % 360; S.pitch = clamp(drag.p + (e.clientY - drag.y) * 0.2, 0, 80); });
+  const endDrag = () => { if (!drag) return; drag = null; hooks.change && hooks.change('look'); };
+  glc.addEventListener('pointerup', endDrag); glc.addEventListener('pointercancel', endDrag);
+
+  let W = 1, H = 1, DPR = 1;
+  new ResizeObserver(() => {
+    W = el.clientWidth; H = el.clientHeight; if (!W || !H) return;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setSize(W, H, false); ov.width = Math.round(W * DPR); ov.height = Math.round(H * DPR);
+    camera.aspect = W / H; camera.updateProjectionMatrix();
+  }).observe(el);
+
+  /* 2D 그리기 도우미 */
+  const M = new THREE.Matrix4();
+  function P(x, y, z) {
+    const e = M.elements, w = e[3] * x + e[7] * y + e[11] * z + e[15];
+    if (w < 0.05) return null;
+    return [((e[0] * x + e[4] * y + e[8] * z + e[12]) / w + 1) * W / 2, (1 - (e[1] * x + e[5] * y + e[9] * z + e[13]) / w) * H / 2];
+  }
+  const Pv = v => P(v.x, v.y, v.z);
+  let tilt = false, SC = 1, SS = 0, SR = 10;
+  // 천구 좌표(자전축이 y) → 화면 속 3D 좌표
+  function eq(h, dec) {
+    const cd = Math.cos(dec), x = -cd * Math.sin(h), y = Math.sin(dec), z = cd * Math.cos(h);
+    return [x * SR, (y * SC - z * SS) * SR, (y * SS + z * SC) * SR];
+  }
+  function behindEarth(p) {
+    const c = camera.position, dx = p[0] - c.x, dy = p[1] - c.y, dz = p[2] - c.z;
+    const k = -(c.x * dx + c.y * dy + c.z * dz) / (dx * dx + dy * dy + dz * dz);
+    if (k <= 0 || k >= 1) return false;
+    const qx = c.x + k * dx, qy = c.y + k * dy, qz = c.z + k * dz;
+    return qx * qx + qy * qy + qz * qz < ER * ER;
+  }
+  // 1: 보임, 0.28: 지평선 아래지만 흐리게 보기, 0: 안 보임
+  function vis(p) {
+    if (!tilt) {
+      if (behindEarth(p)) return 0;
+      // 잇기 장면에서는 지평면 아래의 별이 점점 흐려져요
+      return TR && p[1] < 0 ? 1 - 0.72 * trM : 1;
+    }
+    if (p[1] >= 0) return 1;
+    return S.below && !isLook() ? 0.28 : 0;
+  }
+  function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arc(x + w - r, y + r, r, -Math.PI / 2, 0); ctx.lineTo(x + w, y + h - r); ctx.arc(x + w - r, y + h - r, r, 0, Math.PI / 2); ctx.lineTo(x + r, y + h); ctx.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI); ctx.lineTo(x, y + r); ctx.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5); ctx.closePath(); }
+  function tag(text, q, o) {
+    if (!q) return; o = o || {};
+    const size = o.size || 15;
+    ctx.font = `${size}px "Do Hyeon","Noto Sans KR",sans-serif`;
+    const w = ctx.measureText(text).width + 16, h = size + 10;
+    const x = q[0] - w / 2 + (o.dx || 0), y = q[1] - h / 2 + (o.dy || 0);
+    ctx.globalAlpha = o.alpha == null ? 1 : o.alpha;
+    ctx.fillStyle = o.bg || 'rgba(8,14,40,.8)'; rr(x, y, w, h, h / 2); ctx.fill();
+    ctx.fillStyle = o.fg || '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+    ctx.globalAlpha = 1;
+  }
+  function head(q, dx, dy, size, color) {
+    const L = Math.hypot(dx, dy); if (L < 0.01) return;
+    const ux = dx / L, uy = dy / L, x = q[0] + ux * size * 0.6, y = q[1] + uy * size * 0.6;
+    ctx.fillStyle = color; ctx.beginPath();
+    ctx.moveTo(x + ux * size, y + uy * size);
+    ctx.lineTo(x - uy * size * 0.6, y + ux * size * 0.6);
+    ctx.lineTo(x + uy * size * 0.6, y - ux * size * 0.6);
+    ctx.closePath(); ctx.fill();
+  }
+  // 테두리가 있는 큰 화살촉 (방향을 한눈에 보여 주는 용도)
+  function bigHead(q, dx, dy, s) {
+    const L = Math.hypot(dx, dy); if (L < 0.01) return;
+    const ux = dx / L, uy = dy / L;
+    ctx.beginPath();
+    ctx.moveTo(q[0] + ux * s, q[1] + uy * s);
+    ctx.lineTo(q[0] - ux * s * 0.5 - uy * s * 0.62, q[1] - uy * s * 0.5 + ux * s * 0.62);
+    ctx.lineTo(q[0] - ux * s * 0.15, q[1] - uy * s * 0.15);
+    ctx.lineTo(q[0] - ux * s * 0.5 + uy * s * 0.62, q[1] - uy * s * 0.5 - ux * s * 0.62);
+    ctx.closePath();
+    ctx.fillStyle = '#ffd34d'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(40,25,0,.85)'; ctx.stroke();
+  }
+  const starR = m => clamp(3.1 - m * 0.45, 0.7, 3.2);
+  const DIRS = [['북', 0], ['북동', 45], ['동', 90], ['남동', 135], ['남', 180], ['남서', 225], ['서', 270], ['북서', 315]];
+  const dirName = az => DIRS[Math.round((((az % 360) + 360) % 360) / 45) % 8][0];
+
+  /* 하늘 그리기 (천구 보기와 관측자 보기에서 함께 씀) */
+  function drawSky(th) {
+    const look = isLook(), k = look ? 1.35 : 1;
+    STARS.forEach(s => { s.p = eq(s.h0 + th, s.dec); s.v = vis(s.p); });
+    const showStars = !(tilt && S.target === 'sun');
+    if (S.trails && tilt) {
+      const a0 = Math.max(S.t0, S.t - 24) * 15 * D2R, span = th - a0;
+      if (span > 0.001) {
+        const n = Math.max(2, Math.ceil(span / (2 * D2R)));
+        const trail = (h0, dec, color, width) => {
+          ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+          h0.forEach((h, j) => {
+            let pen = false;
+            for (let i = 0; i <= n; i++) {
+              const p = eq(h + a0 + span * i / n, dec[j]), q = p[1] >= 0 || (S.below && !look) ? P(p[0], p[1], p[2]) : null;
+              if (!q) { pen = false; continue; }
+              if (pen) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
+              pen = true;
+            }
+          });
+          ctx.stroke();
+        };
+        if (showStars) {
+          const list = STARS.filter(s => s.mag <= 4.4 || s.con);
+          trail(list.map(s => s.h0), list.map(s => s.dec), 'rgba(220,232,255,.55)', look ? 2 : 1.5);
+        }
+        if (S.target === 'sun') trail([SUN_H0], [0], 'rgba(255,200,60,.9)', look ? 5 : 4);
+        if (S.target === 'moon') trail([SUN_H0], [0], 'rgba(235,235,225,.8)', look ? 4 : 3);
+      }
+    }
+    // 일주 운동 길잡이: 굵은 길과 큰 화살표 (별과 함께 미끄러지듯 움직여요)
+    if (tilt && S.arrows) {
+      const decs = S.target === 'star' ? [-30, 0, 30, 55, 75] : [0], base = S.target === 'star' ? 0 : SUN_H0;
+      const lw = look ? 8 : 5, hs = look ? 30 : 20;
+      decs.forEach(dd => {
+        const dec = dd * D2R, gap = Math.abs(dd) >= 70 ? 90 : 40;
+        ctx.strokeStyle = 'rgba(255,211,77,.3)'; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+        let pen = false;
+        for (let i = 0; i <= 144; i++) {
+          const p = eq(i / 144 * Math.PI * 2, dec), q = p[1] >= 0 ? P(p[0], p[1], p[2]) : null;
+          if (!q) { pen = false; continue; }
+          if (pen) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
+          pen = true;
+        }
+        ctx.stroke();
+        for (let k = 0; k < 360 / gap; k++) {
+          const h = base + th + k * gap * D2R, p = eq(h, dec), p2 = eq(h + 2 * D2R, dec);
+          if (p[1] < 0.25 || p2[1] < 0) continue;
+          const q = P(p[0], p[1], p[2]), q2 = P(p2[0], p2[1], p2[2]); if (!q || !q2) continue;
+          bigHead(q, q2[0] - q[0], q2[1] - q[1], hs);
+        }
+      });
+    }
+    if (showStars) {
+      ctx.strokeStyle = 'rgba(140,180,255,.55)'; ctx.lineWidth = 1.3; ctx.beginPath();
+      CONSTS.forEach(c => c.lines.forEach(([i, j]) => {
+        const a = STARS[c.idx[i]], b = STARS[c.idx[j]]; if (a.v < 1 || b.v < 1) return;
+        const qa = P(...a.p), qb = P(...b.p); if (!qa || !qb) return;
+        ctx.moveTo(qa[0], qa[1]); ctx.lineTo(qb[0], qb[1]);
+      }));
+      ctx.stroke();
+      STARS.forEach(s => {
+        if (!s.v) return; const q = P(...s.p); if (!q) return;
+        s.q = q;
+        ctx.globalAlpha = s.v; ctx.fillStyle = s.con ? '#fff4d6' : '#e8eeff';
+        ctx.beginPath(); ctx.arc(q[0], q[1], starR(s.mag) * k * (s.con === 'polaris' ? 1.5 : 1), 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      const moving = tilt || S.frame === 'sky';
+      if (S.arrows && moving) STARS.forEach(s => {
+        if (s.v < 1 || !(s.mag <= 3 || s.con) || s.con === 'polaris') return;
+        const q = P(...s.p); if (!q) return;
+        const p2 = eq(s.h0 + th + 3 * D2R, s.dec), q2 = P(...p2); if (!q2) return;
+        head(q, q2[0] - q[0], q2[1] - q[1], look ? 9 : 7, '#ffd34d');
+      });
+      const pol = STARS[POLARIS];
+      if (pol.v) { const q = P(...pol.p); if (q) { ctx.strokeStyle = '#ffe28a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(q[0], q[1], 8 * k, 0, Math.PI * 2); ctx.stroke(); tag(tilt ? '북극성' : '북극성 (천구 북극 근처)', q, { dy: -22, fg: '#ffe28a' }); } }
+      CONSTS.forEach(c => { const s = STARS[c.idx[c.label]]; if (s.v === 1) tag(c.name, P(...s.p), { dy: 20, size: 13, bg: 'rgba(8,14,40,.55)', fg: '#bcd0ff' }); });
+    }
+    if (tilt && S.target !== 'star') {
+      const p = eq(SUN_H0 + th, 0), v = vis(p), q = v ? P(...p) : null;
+      if (q) {
+        const sun = S.target === 'sun', r = (sun ? 15 : 12) * k;
+        ctx.globalAlpha = v;
+        if (sun) { const gr = ctx.createRadialGradient(q[0], q[1], 0, q[0], q[1], r * 2.4); gr.addColorStop(0, 'rgba(255,240,170,1)'); gr.addColorStop(0.4, 'rgba(255,200,60,.9)'); gr.addColorStop(1, 'rgba(255,170,40,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(q[0], q[1], r * 2.4, 0, Math.PI * 2); ctx.fill(); }
+        else { ctx.fillStyle = '#eceee4'; ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(160,160,150,.5)'; [[-.3, -.2, .25], [.25, .2, .18], [.1, -.4, .12]].forEach(([a, b, c]) => { ctx.beginPath(); ctx.arc(q[0] + a * r, q[1] + b * r, c * r, 0, Math.PI * 2); ctx.fill(); }); }
+        ctx.globalAlpha = 1;
+        if (S.arrows) { const q2 = P(...eq(SUN_H0 + th + 3 * D2R, 0)); if (q2) head(q, q2[0] - q[0], q2[1] - q[1], 11 * k, sun ? '#ff9a3d' : '#ffd34d'); }
+        tag(sun ? '태양' : '달', q, { dy: -(r + 18) });
+      }
+    }
+  }
+  function drawHorizon() {
+    const look = isLook();
+    [['동', 1, 0], ['서', -1, 0], ['남', 0, 1], ['북', 0, -1]].forEach(([n, x, z]) => tag(n, P(x * 10.9, 0, z * 10.9), { size: look ? 38 : 30, bg: '#ff8a3d', fg: '#fff' }));
+    if (!look) tag('천정', P(0, 10.25, 0), { size: 13 });
+    if (S.polar && !look) {
+      const pol = eq(STARS[POLARIS].h0, STARS[POLARIS].dec), o = P(0, 0.02, 0), qp = P(...pol), qn = P(0, 0.02, -10);
+      if (o && qp && qn) {
+        ctx.strokeStyle = '#ff6b6b'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 5]);
+        ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(qp[0], qp[1]); ctx.moveTo(o[0], o[1]); ctx.lineTo(qn[0], qn[1]); ctx.stroke(); ctx.setLineDash([]);
+        ctx.lineWidth = 3.5; ctx.beginPath();
+        for (let i = 0; i <= 30; i++) { const a = S.lat * D2R * i / 30, q = P(0, 3.4 * Math.sin(a), -3.4 * Math.cos(a)); if (q) { if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } }
+        ctx.stroke();
+        const am = S.lat * D2R / 2;
+        tag(`북극성 고도 ${S.lat}°`, P(0, 5 * Math.sin(am) + 0.4, -5 * Math.cos(am)), { bg: '#ff6b6b', fg: '#2a0000', size: 15 });
+        if (S.target === 'sun') { // 낮에는 별을 그리지 않으니 북극성 자리만 표시
+          ctx.strokeStyle = '#ffe28a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(qp[0], qp[1], 7, 0, Math.PI * 2); ctx.stroke();
+          tag('북극성 자리', qp, { dy: -20, fg: '#ffe28a' });
+        }
+      }
+    }
+  }
+  function drawSphere(th) {
+    // 천구의 적도 (점선)
+    ctx.strokeStyle = 'rgba(255,220,120,.55)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 6]); ctx.beginPath();
+    let pen = false;
+    for (let i = 0; i <= 120; i++) { const p = eq(i / 120 * Math.PI * 2, 0), q = behindEarth(p) ? null : P(...p); if (!q) { pen = false; continue; } if (pen) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); pen = true; }
+    ctx.stroke(); ctx.setLineDash([]);
+    drawSky(th);
+    if (TR) {
+      const R = hzDisc.scale.x * 1.15, at = v => Pv(hz2.localToWorld(v));
+      [['동', R, 0], ['서', -R, 0], ['남', 0, R], ['북', 0, -R]].forEach(([nm, x, z]) => tag(nm, at(V(x, 0, z)), { size: 15 + 7 * trM, bg: '#ffcfb0', fg: '#3a1a00' }));
+      if (trM < 0.5) tag('우리나라의 관측자', at(V(0, obs2.scale.x * 2.6, 0)), { size: 14, bg: '#ff4d5e', alpha: 1 - trM * 2 });
+      if (trM > 0.5) tag('천정 (머리 위)', at(V(0, hzDisc.scale.x * 1.05, 0)), { size: 14 });
+      tag('지평면', at(V(hzDisc.scale.x * 0.45, 0, hzDisc.scale.x * 0.45)), { size: 13 + 3 * trM, bg: 'rgba(44,106,60,.9)' });
+      return;
+    }
+    // 일주 운동 방향 (기울어진 천구의 적도 중 카메라 쪽 부분에 노란 화살표, 동 → 서)
+    // 카메라 위치를 천구 좌표(자전축이 y)로 바꿔서 카메라 쪽 적도를 찾아요
+    const c = camera.position, cz = -c.y * Math.sin(TILT2) + c.z * Math.cos(TILT2);
+    const hc = Math.atan2(-c.x, cz), pts = [];
+    for (let i = 0; i <= 24; i++) pts.push(P(...eq(hc + (-40 + i * 80 / 24) * D2R, -6 * D2R)));
+    if (pts.every(Boolean)) {
+      ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath();
+      pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke();
+      const a = pts[pts.length - 2], b = pts[pts.length - 1]; head(b, b[0] - a[0], b[1] - a[1], 14, '#ffd34d');
+      tag('천체의 일주 운동 방향 (동 → 서)', pts[12], { dy: 26, bg: '#ffd34d', fg: '#2a1c00' });
+    }
+    tag('지구의 자전 방향 (서 → 동)', Pv(g2.localToWorld(arr2.userData.end.clone())), { dy: 30, dx: 30, bg: '#ff9a3d', fg: '#2a1000' });
+    tag('천구', P(0, 9.6, 0), { size: 18 });
+    const tip = spin2.localToWorld(pin2.userData.tip.clone()), n = tip.clone().normalize();
+    if (n.dot(camera.position.clone().sub(tip)) > 0) tag('우리나라', Pv(tip), { dy: -18, size: 13, bg: '#ff4d5e' });
+  }
+  function drawEarth() {
+    const w = v => tilt1.localToWorld(v.clone());
+    tag('북극 · 자전축', Pv(w(V(0, 5.0, 0))), { fg: '#ffb3b3' });
+    tag('남극', Pv(w(V(0, -5.0, 0))), { fg: '#ffb3b3' });
+    tag('서', Pv(w(arr1.userData.start.clone().multiplyScalar(1.12))), { size: 20, bg: '#ffcfb0', fg: '#3a1a00' });
+    tag('동', Pv(w(arr1.userData.end.clone().multiplyScalar(1.12))), { size: 20, bg: '#ffcfb0', fg: '#3a1a00' });
+    tag('지구의 자전 방향', Pv(w(arr1.userData.mid.clone().multiplyScalar(1.1))), { dy: 22, bg: '#ff9a3d', fg: '#2a1000' });
+    tag('햇빛', P(-7, 3, 0), { bg: '#ffd34d', fg: '#2a1c00' });
+    const tip = spin1.localToWorld(pin1.userData.tip.clone()), n = tip.clone().normalize();
+    if (n.dot(camera.position.clone().sub(tip)) > 0) tag('우리나라', Pv(tip), { dy: -18, size: 14, bg: '#ff4d5e' });
+  }
+
+  /* 화면 위 글자 (경과 시간 등) */
+  let hudTxt = '', faceTxt = '';
+  function hud(th) {
+    const deg = Math.round(S.t * 15), h = fmtH(S.t);
+    let s = '', f = '';
+    if (TR) {
+      const T = TR.T;
+      s = T < 3.5 ? '① 우리나라에 선 관측자의 지평면이에요. 지평면은 지구 표면에 닿아 있어요.'
+        : T < 7 ? '② 천구는 지구보다 어마어마하게 커요. 그래서 지구는 점처럼 작아지고, 지평면은 천구의 한가운데를 지나요.'
+        : '→ 이것이 밖에서 본 우리나라 하늘이에요!';
+    } else if (S.view === 'earth') {
+      const n = spin1.localToWorld(pin1.userData.tip.clone()).sub(tilt1.localToWorld(V(0, 0, 0))).normalize();
+      s = `⏱ ${h} 지남 · 지구 ${deg}° 회전 · 우리나라는 ${clockK(12 + S.t)} (${n.x < 0 ? '☀️ 낮' : '🌙 밤'})`;
+      if (S.earthCam === 'top') s += ' · 북극 위에서 보면 ↺ 시계 반대 방향';
+    } else if (S.view === 'sphere') {
+      s = S.frame === 'earth' ? `⏱ ${h} · 🌍 실제: 지구가 서→동으로 ${deg}° 자전 (별은 제자리)` : `⏱ ${h} · 👀 겉보기: 하늘이 동→서로 ${deg}° 회전 (지구는 멈춘 것처럼)`;
+    } else {
+      const start = S.target === 'sun' ? 6 : S.target === 'moon' ? 18 : 20, nm = S.target === 'sun' ? '태양' : S.target === 'moon' ? '달' : '별';
+      s = `🕗 ${clockK(start + S.t)} · ${h} 동안 ${nm}이 ${deg}° 이동`;
+      if (isLook()) { const l = dirName(S.az - 90), r = dirName(S.az + 90); f = `◀ ${l}   ·   ${dirName(S.az)}쪽 하늘을 보고 있어요   ·   ${r} ▶`; }
+    }
+    if (s !== hudTxt) hudEl.textContent = hudTxt = s;
+    if (f !== faceTxt) faceEl.textContent = faceTxt = f;
+  }
+
+  const col = (a, b, k) => new THREE.Color(a).lerp(new THREE.Color(b), k);
+  let last = 0;
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
+    if (!el.isConnected || !W) return;
+    if (TR) linkFrame(dt);
+    const t1 = S.t;
+    if (S.goal != null) {
+      S.t = Math.min(S.goal, S.t + S.rate * dt);
+      if (S.t >= S.goal - 1e-9) { S.t = S.goal; S.goal = null; S.playing = false; if (hooks.change) setTimeout(() => hooks.change('goal')); }
+    } else if (S.playing) S.t += SPEEDS[S.speed] * dt;
+    const adv = S.t - t1;
+    if (adv > 0) {
+      const key = S.view === 'earth' ? 'earth-' + S.earthCam : S.view === 'sphere' ? 'sphere-' + S.frame : 'sky';
+      const was = watch[key] || 0; watch[key] = was + adv;
+      if (was < 2 && watch[key] >= 2 && hooks.watch) setTimeout(() => hooks.watch(key));
+    }
+    const th = S.t * 15 * D2R;
+    spin1.rotation.y = 53 * D2R + th; // 시작할 때 우리나라가 정오
+    spin2.rotation.y = 143 * D2R + (S.frame === 'earth' ? th : 0); // 시작할 때 우리나라가 앞쪽
+    tilt = S.view === 'sky'; SR = tilt ? 10 : TR ? TR.sr : 9;
+    const a = tilt ? (S.lat - 90) * D2R : TILT2; SC = Math.cos(a); SS = Math.sin(a);
+    const look = isLook();
+    let bg = col(0x050914, 0x050914, 0);
+    if (tilt) {
+      if (S.target === 'sun') {
+        const alt = eq(SUN_H0 + th, 0)[1] / 10, kk = clamp((alt + 0.12) / 0.3, 0, 1);
+        bg = look ? col(0x0a1330, 0x5d9fe0, kk) : col(0x050914, 0x0d2246, kk);
+        shellMat.color = col(0x8fb8ff, 0x9fd0ff, kk); shellMat.opacity = 0.1 + kk * 0.15;
+      } else { bg = col(look ? 0x081233 : 0x050914, 0, 0); shellMat.color = col(0x8fb8ff, 0, 0); shellMat.opacity = 0.1; }
+    }
+    renderer.setClearColor(bg);
+    if (look) {
+      const az = S.az * D2R, p = S.pitch * D2R;
+      camera.position.set(0, 0.35, 0);
+      camera.lookAt(Math.sin(az) * Math.cos(p) * 10, 0.35 + Math.sin(p) * 10, -Math.cos(az) * Math.cos(p) * 10);
+    } else if (!TR) controls.update();
+    renderer.render(scene, camera);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+    camera.updateMatrixWorld(); M.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    if (S.view === 'earth') drawEarth();
+    else if (S.view === 'sphere') drawSphere(S.frame === 'sky' ? th : 0);
+    else { drawSky(th); drawHorizon(); }
+    hud(th);
+  }
+  applyView(true);
+  requestAnimationFrame(loop);
+  return { ok: true, el, S, watch, hooks, SPEEDS, set, play, step, reset, replay, trailReset, preset, link, linking: () => !!TR };
+})();
+
+/* ───────── 수업 모드 내용 ─────────
+   [ ] 안의 말은 빈칸이에요. 눌러서 하나씩 보여 줄 수 있어요. (학습지 8~9쪽) */
+const TABS = [
+  { name: '① 지구의 자전', title: '🌍 지구의 자전', setup: { view: 'earth', earthCam: 'side' },
+    lines: ['지구가 [자전축]을 중심으로 [하루]에 한 바퀴씩 스스로 도는 운동', '자전 방향: [서] → [동]<br>북극 위에서 보면 [시계 반대] 방향', '자전 속도: 1시간에 [15]° (360° ÷ 24시간)', '자전축은 약 [23.5]° 기울어져 있어요.', '자전으로 나타나는 현상: [낮과 밤]의 반복, 천체의 [일주 운동]'],
+    ask: '<b>먼저 예측!</b> ⬇️ 북극 위에서 보기를 누르기 전에, 지구가 어느 방향으로 돌지 손가락으로 그려 보세요.' },
+  { name: '② 천구와 일주 운동', title: '✨ 천구와 천체의 일주 운동', setup: { view: 'sphere', frame: 'earth' },
+    lines: ['[천구]: 하늘에 별들이 붙어 있는 것처럼 보이는, 무한히 넓은 가상의 구', '일주 운동: 지구의 자전으로 하루 동안 나타나는 천체의 [겉보기] 운동', '방향: [동] → [서] (지구의 자전 방향과 [반대])', '속도: 1시간에 [15]° (지구의 자전 속도와 [같음])', '천체들은 [북극성]을 중심으로 원을 그리며 도는 것처럼 보여요. (자전축을 늘인 곳 = 천구 북극)'],
+    ask: '<b>기차 비유</b> 기차를 타고 가면 창밖 나무가 뒤로 가는 것처럼 보이죠? 🌍 실제와 👀 겉보기를 번갈아 눌러 비교해 보세요.<br><b>다음으로</b> 🔍 우리나라로 확대를 누르면, 이 천구가 우리나라 관측자가 보는 하늘로 어떻게 바뀌는지 볼 수 있어요.' },
+  { name: '③ 방향별 별의 움직임', title: '🧭 우리나라에서 본 별의 일주 운동', setup: { view: 'sky', cam: 'look', az: 90, target: 'star', lat: 37.5, trails: true, arrows: true, polar: false, below: false },
+    lines: ['<b>동쪽 하늘</b>: [왼쪽 아래]에서 [오른쪽 위]로 비스듬히 떠올라요.', '<b>남쪽 하늘</b>: [동쪽]에서 [서쪽]으로 지평선과 나란히 이동해요. (화면에서는 왼쪽 → 오른쪽)', '<b>서쪽 하늘</b>: [왼쪽 위]에서 [오른쪽 아래]로 비스듬히 져요.', '<b>북쪽 하늘</b>: [북극성]을 중심으로 [시계 반대] 방향으로 돌아요.'],
+    ask: '<b>방향 감각</b> 남쪽을 보고 서면 왼쪽은 어느 방향일까요? 동쪽을 보고 서면? 🔭 밖에서 보기로 바꿔 관측자가 어느 쪽을 보는지 확인해 보세요.' },
+  { name: '④ 태양과 달', title: '☀️ 태양과 달의 일주 운동', setup: { view: 'sky', cam: 'out', target: 'sun', lat: 37.5, trails: true, arrows: true, polar: false, below: false },
+    lines: ['태양은 [동]쪽에서 떠서 [남]쪽 하늘을 지나 [서]쪽으로 져요.', '달도 별처럼 [동] → [서]로 일주 운동해요.', '태양·달·별 모두 지구의 [자전] 때문에 나타나는 겉보기 운동이에요.', '참고: 북극성의 고도 = 그 지방의 [위도] (우리나라 약 37.5°, 📐 버튼으로 보기)'],
+    ask: '<b>예측해요</b> 해가 뜰 때 어느 쪽을 보고 서야 할까요? 낮 12시 무렵 태양은 어느 쪽 하늘에 있을까요?' }
+];
+
+/* ───────── 탐사 모드 문제 ─────────
+   모든 학생이 같은 문제를 같은 순서로 풀어요. '___'가 빈칸이에요. */
+const M1Q = [
+  { s: '지구가 ___을 중심으로 하루에 한 바퀴씩 스스로 도는 운동을 지구의 자전이라고 해요.', o: ['자전축', '적도', '태양'], a: 0, h: '빨간 막대가 지구의 북극과 남극을 이어요.' },
+  { s: '자전축은 약 ___ 기울어져 있어요.', o: ['0°', '23.5°', '45°'], a: 1, h: '빨간 자전축이 똑바로 서 있지 않아요.' },
+  { s: '지구의 자전 방향은 ___이에요.', o: ['서쪽 → 동쪽', '동쪽 → 서쪽'], a: 0, h: '🌍 옆에서 보기에서 주황색 화살표와 서·동 표시를 보세요.' },
+  { s: '북극 위에서 내려다보면 지구는 ___으로 돌아요.', o: ['시계 방향', '시계 반대 방향'], a: 1, h: '⬇️ 북극 위에서 보기로 바꾸고 재생해 보세요.' },
+  { s: '지구는 하루(24시간)에 360°를 돌아요. 그래서 1시간에 ___씩 돌아요.', o: ['1°', '15°', '24°', '30°'], a: 1, h: '360° ÷ 24를 계산하거나, +1시간 버튼을 누르고 화면 위의 각도를 보세요.' },
+  { s: '태양을 향한 쪽은 낮, 반대쪽은 밤이에요. 지구가 ___하기 때문에 낮과 밤이 매일 반복돼요.', o: ['자전', '공전'], a: 0, h: '우리나라 표시가 낮과 밤을 오가는 까닭을 생각해 보세요.' }
+];
+const M2Q = [
+  { s: '하늘에 별들이 붙어 있는 것처럼 보이는, 무한히 넓은 가상의 구를 ___라고 해요.', o: ['천구', '지평선', '대기'], a: 0, h: '지구를 둘러싼 파란 공에 별들이 붙어 있어요.' },
+  { s: '천체의 일주 운동은 지구의 ___ 때문에 나타나요.', o: ['자전', '공전'], a: 0, h: '🌍 실제 보기에서는 무엇이 돌고 있나요?' },
+  { s: '일주 운동은 천체가 실제로 움직이는 것이 아니라 움직이는 것처럼 보이는 ___ 운동이에요.', o: ['실제', '겉보기'], a: 1, h: '기차 창밖의 나무가 뒤로 가는 것처럼 보이는 것과 같아요.' },
+  { s: '천체의 일주 운동 방향은 ___이에요.', o: ['동 → 서 (지구 자전과 반대)', '서 → 동 (지구 자전과 같음)'], a: 0, h: '노란 화살표와 주황 화살표의 방향을 비교해 보세요.' },
+  { s: '천체는 1시간에 ___씩 일주 운동해요. 지구의 자전 속도와 같아요.', o: ['1°', '15°', '30°'], a: 1, h: '+1시간 버튼을 누르고 화면 위의 각도를 보세요.' },
+  { s: '천체들은 ___ 부근을 중심으로 원을 그리며 도는 것처럼 보여요.', o: ['북극성', '태양', '달'], a: 0, h: '빨간 자전축을 북극 쪽으로 길게 늘이면 어떤 별과 만나나요?' }
+];
+const ARW = { ur: '왼쪽 아래 → 오른쪽 위', dr: '왼쪽 위 → 오른쪽 아래', r: '곡선을 그리며 왼쪽 → 오른쪽', l: '곡선을 그리며 오른쪽 → 왼쪽', ccw: '시계 반대 방향으로 회전', cw: '시계 방향으로 회전' };
+const PRED = ['ur', 'dr', 'r', 'l', 'ccw', 'cw'];
+const SUN_O = ['동 → 남 → 서', '서 → 남 → 동', '동 → 북 → 서'];
+const M3 = [
+  { k: 'E', title: '동쪽 하늘', az: 90, a: 'ur', ex: '동쪽 하늘의 별은 지평선에서 비스듬히 떠올라요. 동쪽을 보고 서면 왼쪽이 북쪽, 오른쪽이 남쪽이에요.' },
+  { k: 'S', title: '남쪽 하늘', az: 180, a: 'r', ex: '남쪽 하늘의 별은 위로 볼록한 곡선을 그리며 동쪽(왼쪽)에서 서쪽(오른쪽)으로 움직여요.' },
+  { k: 'W', title: '서쪽 하늘', az: 270, a: 'dr', ex: '서쪽 하늘의 별은 비스듬히 지평선 아래로 져요. 서쪽을 보고 서면 왼쪽이 남쪽, 오른쪽이 북쪽이에요.' },
+  { k: 'N', title: '북쪽 하늘', az: 0, a: 'ccw', ex: '북쪽 하늘의 별은 북극성을 중심으로 시계 반대 방향으로 돌아요. 1시간에 15°씩, 4시간이면 60°를 돌아요.' },
+  { k: 'sun', title: '태양', a: 0, ex: '태양도 별처럼 동쪽에서 떠서 남쪽 하늘을 지나 서쪽으로 져요. 지구가 자전하기 때문에 나타나는 겉보기 운동이에요.' }
+];
+const QUIZ = [
+  { fig: 'dipper', s: '그림은 북쪽 하늘의 북두칠성을 2시간 간격으로 관측한 것이에요. 가운데에서 거의 움직이지 않는 별 P의 이름은?', o: ['북극성', '북두칠성', '시리우스', '태양'], a: 0, ex: '북쪽 하늘의 별들은 북극성을 중심으로 돌아요. 북극성은 천구 북극 가까이에 있어서 거의 움직이지 않아요.' },
+  { fig: 'dipper', s: '그림에서 2시간 동안 북두칠성이 북극성을 중심으로 회전한 각도 θ는?', o: ['15°', '30°', '45°', '60°'], a: 1, h: '별은 1시간에 몇 °씩 움직이나요?', ex: '별은 1시간에 15°씩 움직여요. 2시간 × 15° = 30°' },
+  { fig: 'dipper', s: '그림에서 북두칠성은 어느 쪽으로 움직였을까요?', o: ['A → B', 'B → A'], a: 0, h: '북쪽 하늘의 별이 도는 방향을 떠올려 보세요.', ex: '북쪽 하늘의 별은 북극성을 중심으로 시계 반대 방향으로 돌아요. 그래서 A에서 B로 움직여요.' },
+  { fig: 'cass', s: '북쪽 하늘의 카시오페이아자리가 B에 있을 때 밤 11시였어요. A에 있을 때는 몇 시였을까요?', o: ['저녁 8시', '저녁 9시', '새벽 1시', '새벽 2시'], a: 0, h: '먼저 A와 B 중 어느 쪽이 먼저인지 정하고, 45°가 몇 시간인지 계산해 보세요.', ex: '시계 반대 방향으로 도니까 A → B 순서예요. 45° ÷ 15° = 3시간이므로 A는 밤 11시보다 3시간 전인 저녁 8시예요.' },
+  { fig: 'arcs', s: '서울에서 북쪽 하늘을 향해 3시간 동안 별을 촬영했어요. 호의 중심각 θ는?', o: ['15°', '30°', '45°', '60°'], a: 2, h: '1시간에 15°씩 움직여요.', ex: '3시간 × 15° = 45°. 모든 호의 중심각은 똑같아요.' },
+  { fig: 'E', s: '우리나라에서 찍은 별의 자취예요. 어느 쪽 하늘일까요?', o: ['동쪽', '서쪽', '남쪽', '북쪽'], a: 0, h: '자취가 비스듬한 방향을 보세요. 지평선에서 떠오르나요, 지나요?', ex: '별이 왼쪽 아래에서 오른쪽 위로 비스듬히 떠오르는 모습이에요. 동쪽 하늘이에요.' },
+  { fig: 'S', s: '우리나라에서 찍은 별의 자취예요. 어느 쪽 하늘일까요?', o: ['동쪽', '서쪽', '남쪽', '북쪽'], a: 2, h: '자취가 지평선과 어떤 모양인지 보세요.', ex: '별이 지평선과 거의 나란히 동쪽(왼쪽)에서 서쪽(오른쪽)으로 움직여요. 남쪽 하늘이에요.' },
+  { fig: 'W', s: '우리나라에서 찍은 별의 자취예요. 어느 쪽 하늘일까요?', o: ['동쪽', '서쪽', '남쪽', '북쪽'], a: 1, h: '자취가 비스듬한 방향을 보세요. 지평선에서 떠오르나요, 지나요?', ex: '별이 왼쪽 위에서 오른쪽 아래로 비스듬히 지는 모습이에요. 서쪽 하늘이에요.' },
+  { s: 'O/X: 별의 일주 운동 방향은 서쪽에서 동쪽이다.', o: ['O', 'X'], a: 1, ex: '별의 일주 운동은 동쪽 → 서쪽이에요. 서쪽 → 동쪽은 지구의 자전 방향이에요.' },
+  { s: 'O/X: 별의 일주 운동은 지구가 공전하기 때문에 나타난다.', o: ['O', 'X'], a: 1, ex: '일주 운동은 지구의 자전 때문에 하루 동안 나타나는 겉보기 운동이에요.' },
+  { s: '우리나라에서 본 태양의 일주 운동 순서로 옳은 것은?', o: ['동 → 남 → 서', '동 → 북 → 서', '서 → 남 → 동'], a: 0, ex: '태양은 동쪽에서 떠서 남쪽 하늘을 지나 서쪽으로 져요.' },
+  { s: '별은 1시간에 몇 °씩 일주 운동할까요?', o: ['1°', '15°', '30°', '360°'], a: 1, h: '하루(24시간)에 한 바퀴(360°)를 돌아요.', ex: '360° ÷ 24시간 = 15°. 지구의 자전 속도와 같아요.' }
+];
+
+/* ───────── 그림 (SVG) ───────── */
+function polyArrow(pts, color, w) {
+  const [x1, y1] = pts[pts.length - 2], [x2, y2] = pts[pts.length - 1];
+  const a = Math.atan2(y2 - y1, x2 - x1), L = w * 3.2;
+  const h1 = [x2 - L * Math.cos(a - 0.5), y2 - L * Math.sin(a - 0.5)], h2 = [x2 - L * Math.cos(a + 0.5), y2 - L * Math.sin(a + 0.5)];
+  const f = p => p.map(n => n.toFixed(1)).join(',');
+  return `<polyline points="${pts.map(f).join(' ')}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/><polygon points="${f([x2 + Math.cos(a) * w, y2 + Math.sin(a) * w])} ${f(h1)} ${f(h2)}" fill="${color}"/>`;
+}
+function arrowSvg(o) {
+  let pts;
+  if (o === 'ur') pts = [[14, 50], [48, 16]];
+  else if (o === 'dr') pts = [[14, 14], [48, 48]];
+  // 남쪽 하늘처럼 위로 볼록한 곡선
+  else if (o === 'r' || o === 'l') { pts = []; for (let i = 0; i <= 20; i++) { const k = o === 'r' ? i : 20 - i; pts.push([10 + 44 * k / 20, 46 - 22 * Math.sin(Math.PI * k / 20)]); } }
+  else { pts = []; for (let i = 0; i <= 24; i++) { const a = (o === 'ccw' ? -60 + i * 12.5 : 240 - i * 12.5) * D2R; pts.push([32 + 18 * Math.cos(a), 32 - 18 * Math.sin(a)]); } }
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="12" fill="#0b1230"/>${o === 'ccw' || o === 'cw' ? '<circle cx="32" cy="32" r="3.5" fill="#ffd34d"/>' : ''}${polyArrow(pts, '#fff', 4)}</svg>`;
+}
+const svgText = (x, y, t, o) => `<text x="${x}" y="${y}" fill="${(o && o.c) || '#eef2ff'}" font-size="${(o && o.s) || 15}" font-family="Do Hyeon, Noto Sans KR, sans-serif" text-anchor="${(o && o.a) || 'middle'}">${t}</text>`;
+function figDipper() {
+  const P = [70, 168], base = [[150, 0], [150, 36], [186, 40], [184, 4], [214, -6], [240, -2], [266, 14]], L = [[0, 1], [1, 2], [2, 3], [3, 0], [3, 4], [4, 5], [5, 6]];
+  // 화면에서 시계 반대 방향으로 deg만큼 돌리기
+  const rot = (p, deg) => { const a = deg * D2R; return [P[0] + p[0] * Math.cos(a) + p[1] * Math.sin(a), P[1] - p[0] * Math.sin(a) + p[1] * Math.cos(a)]; };
+  const shape = (deg, op) => { const q = base.map(p => rot(p, deg)); return L.map(([i, j]) => `<line x1="${q[i][0]}" y1="${q[i][1]}" x2="${q[j][0]}" y2="${q[j][1]}" stroke="#fff" stroke-opacity="${op}" stroke-width="1.5"/>`).join('') + q.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#fff" fill-opacity="${op}"/>`).join(''); };
+  const A = rot(base[0], 0), B = rot(base[0], 30), r = 46;
+  return `<svg class="fig" viewBox="0 0 360 230" role="img" aria-label="북극성 P를 중심으로 북두칠성이 A에서 B로 30도 회전한 그림">
+<rect width="360" height="230" fill="#0d1838"/>${shape(0, 1)}${shape(30, 1)}
+<line x1="${P[0]}" y1="${P[1]}" x2="${A[0]}" y2="${A[1]}" stroke="#9fb3e8" stroke-dasharray="4 4"/><line x1="${P[0]}" y1="${P[1]}" x2="${B[0]}" y2="${B[1]}" stroke="#9fb3e8" stroke-dasharray="4 4"/>
+<path d="M ${P[0] + r} ${P[1]} A ${r} ${r} 0 0 0 ${(P[0] + r * Math.cos(30 * D2R)).toFixed(1)} ${(P[1] - r * Math.sin(30 * D2R)).toFixed(1)}" fill="none" stroke="#ffd34d" stroke-width="2"/>
+${svgText(P[0] + 62, P[1] - 12, 'θ', { c: '#ffd34d', s: 17 })}
+<circle cx="${P[0]}" cy="${P[1]}" r="6" fill="#ffe28a"/>${svgText(P[0] - 16, P[1] + 5, 'P', { s: 18 })}
+${svgText(A[0] - 4, A[1] + 22, 'A', { s: 18, c: '#7cc4ff' })}${svgText(B[0] - 16, B[1] - 4, 'B', { s: 18, c: '#7cc4ff' })}
+${svgText(20, 222, '서', { s: 16, c: '#ffcfb0' })}${svgText(340, 222, '동', { s: 16, c: '#ffcfb0' })}</svg>`;
+}
+function figCass() {
+  const P = [300, 120], R = 185, W = [[-34, -8], [-17, 10], [0, -4], [17, 10], [34, -10]];
+  const at = deg => [P[0] + R * Math.cos(deg * D2R), P[1] - R * Math.sin(deg * D2R)];
+  const shape = (deg, rotDeg) => {
+    const c = at(deg), a = rotDeg * D2R;
+    const q = W.map(([x, y]) => [c[0] + x * Math.cos(a) + y * Math.sin(a), c[1] - x * Math.sin(a) + y * Math.cos(a)]);
+    return q.slice(1).map((p, i) => `<line x1="${q[i][0]}" y1="${q[i][1]}" x2="${p[0]}" y2="${p[1]}" stroke="#fff" stroke-width="1.5"/>`).join('') + q.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#fff"/>`).join('');
+  };
+  const A = at(157.5), B = at(202.5), r = 52, a1 = [P[0] + r * Math.cos(157.5 * D2R), P[1] - r * Math.sin(157.5 * D2R)], a2 = [P[0] + r * Math.cos(202.5 * D2R), P[1] - r * Math.sin(202.5 * D2R)];
+  return `<svg class="fig" viewBox="0 0 360 240" role="img" aria-label="북극성을 중심으로 카시오페이아자리가 A와 B 위치에 있고 사이 각도가 45도인 그림">
+<rect width="360" height="240" fill="#0d1838"/>
+<path d="M ${A[0].toFixed(1)} ${A[1].toFixed(1)} A ${R} ${R} 0 0 0 ${B[0].toFixed(1)} ${B[1].toFixed(1)}" fill="none" stroke="#9fb3e8" stroke-dasharray="3 5"/>
+<line x1="${P[0]}" y1="${P[1]}" x2="${A[0]}" y2="${A[1]}" stroke="#9fb3e8"/><line x1="${P[0]}" y1="${P[1]}" x2="${B[0]}" y2="${B[1]}" stroke="#9fb3e8"/>
+<path d="M ${a1[0].toFixed(1)} ${a1[1].toFixed(1)} A ${r} ${r} 0 0 0 ${a2[0].toFixed(1)} ${a2[1].toFixed(1)}" fill="none" stroke="#ffd34d" stroke-width="2"/>
+${svgText(P[0] - 70, P[1] + 6, '45°', { c: '#ffd34d', s: 16 })}
+${shape(157.5, -22.5)}${shape(202.5, 22.5)}
+<circle cx="${P[0]}" cy="${P[1]}" r="6" fill="#ffe28a"/>${svgText(P[0] + 4, P[1] + 26, '북극성', { s: 15, c: '#ffe28a' })}
+${svgText(A[0] - 2, A[1] - 22, 'A', { s: 18, c: '#7cc4ff' })}${svgText(B[0] - 2, B[1] + 32, 'B (밤 11시)', { s: 16, c: '#7cc4ff' })}</svg>`;
+}
+function figArcs() {
+  const P = [180, 92], r = rng(11), pt = (rad, deg) => [(P[0] + rad * Math.cos(deg * D2R)).toFixed(1), (P[1] - rad * Math.sin(deg * D2R)).toFixed(1)];
+  let arcs = '';
+  for (let i = 0; i < 12; i++) {
+    const rad = 18 + i * 17, s = i === 6 ? -90 : r() * 360, a = pt(rad, s), b = pt(rad, s + 45);
+    arcs += `<path d="M ${a[0]} ${a[1]} A ${rad} ${rad} 0 0 0 ${b[0]} ${b[1]}" fill="none" stroke="${i === 6 ? '#fff' : '#cfd9ff'}" stroke-width="${i === 6 ? 3 : 2}" stroke-opacity="${i === 6 ? 1 : 0.7}" stroke-linecap="round"/>`;
+  }
+  const e1 = pt(240, -90), e2 = pt(240, -45), m1 = pt(34, -90), m2 = pt(34, -45), tl = pt(50, -67);
+  return `<svg class="fig" viewBox="0 0 360 240" role="img" aria-label="북극성 P를 중심으로 별들이 그린 호와 중심각 θ">
+<rect width="360" height="240" fill="#0d1838"/>${arcs}
+<line x1="${P[0]}" y1="${P[1]}" x2="${e1[0]}" y2="${e1[1]}" stroke="#ffd34d" stroke-dasharray="4 4"/><line x1="${P[0]}" y1="${P[1]}" x2="${e2[0]}" y2="${e2[1]}" stroke="#ffd34d" stroke-dasharray="4 4"/>
+<path d="M ${m1[0]} ${m1[1]} A 34 34 0 0 0 ${m2[0]} ${m2[1]}" fill="none" stroke="#ffd34d" stroke-width="2"/>
+${svgText(tl[0], +tl[1] + 6, 'θ', { c: '#ffd34d', s: 17 })}
+<circle cx="${P[0]}" cy="${P[1]}" r="6" fill="#ffe28a"/>${svgText(P[0], P[1] - 12, 'P', { s: 17 })}</svg>`;
+}
+function figTrail(dir) {
+  const r = rng(dir === 'E' ? 21 : dir === 'W' ? 22 : 23);
+  let lines = '';
+  for (let i = 0; i < 60; i++) {
+    const x = r() * 200 - 10, y = r() * 220 - 10, L = 22 + r() * 26, op = (0.35 + r() * 0.65).toFixed(2), w = (0.8 + r() * 1.4).toFixed(1);
+    if (dir === 'S') {
+      const R = 420 + r() * 220, cx = 90, cy = y + R, a0 = Math.asin(clamp((x - cx) / R, -1, 1)), da = L / R;
+      const p1 = [cx + R * Math.sin(a0), cy - R * Math.cos(a0)], p2 = [cx + R * Math.sin(a0 + da), cy - R * Math.cos(a0 + da)];
+      lines += `<path d="M ${p1[0].toFixed(1)} ${p1[1].toFixed(1)} A ${R.toFixed(0)} ${R.toFixed(0)} 0 0 1 ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}" stroke="#fff" stroke-opacity="${op}" stroke-width="${w}" fill="none" stroke-linecap="round"/>`;
+    } else {
+      const a = 52 * D2R, dx = L * Math.cos(a), dy = (dir === 'E' ? -1 : 1) * L * Math.sin(a);
+      lines += `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x + dx).toFixed(1)}" y2="${(y + dy).toFixed(1)}" stroke="#fff" stroke-opacity="${op}" stroke-width="${w}" stroke-linecap="round"/>`;
+    }
+  }
+  let hill = 'M 0 240 L 0 205';
+  for (let x = 0; x <= 180; x += 12) hill += ` L ${x} ${(196 + r() * 16).toFixed(0)}`;
+  hill += ' L 180 240 Z';
+  return `<svg class="fig" viewBox="0 0 180 240" style="max-width:220px;margin-left:auto;margin-right:auto" role="img" aria-label="별의 자취 사진"><rect width="180" height="240" fill="#0d1838"/>${lines}<path d="${hill}" fill="#05080f"/></svg>`;
+}
+const FIGS = { dipper: figDipper, cass: figCass, arcs: figArcs, E: () => figTrail('E'), S: () => figTrail('S'), W: () => figTrail('W') };
+
+/* ───────── 저장 ───────── */
+const KEY = 'diurnal-motion-v1';
+const fresh = () => ({ view: 'intro', num: '', name: '', code: '', m1: { seen: {}, q: {} }, m2: { seen: {}, q: {} }, m3: { step: 0, s: {}, lat: {}, q: {} }, m4: { q: {} }, sentSig: '', sent: false });
+let state = fresh();
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.m1) state = Object.assign(fresh(), s, { view: 'intro' }); } catch (e) {}
+const ui = { tab: 0, rev: {}, fb: {}, server: null, teacher: null, submitMsg: '' };
+let syncTimer = null;
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} clearTimeout(syncTimer); syncTimer = setTimeout(sync, 1500); }
+
+const QS = { m1: [M1Q, () => state.m1.q], m2: [M2Q, () => state.m2.q], m4: [QUIZ, () => state.m4.q] };
+const qDone = (qs, rec) => qs.every((q, i) => rec[i] && rec[i].ok);
+const okCount = (qs, rec) => qs.filter((q, i) => rec[i] && rec[i].ok).length;
+const firstOk = (qs, rec) => qs.filter((q, i) => rec[i] && rec[i].ok && !rec[i].no.length).length;
+const CHECK = {
+  m1: [['earth-side', '🌍 옆에서 보며 지구를 2시간 이상 돌려 보기'], ['earth-top', '⬇️ 북극 위에서 보며 2시간 이상 돌려 보기']],
+  m2: [['sphere-earth', '🌍 실제: 지구가 도는 모습을 2시간 이상 보기'], ['sphere-sky', '👀 겉보기: 하늘이 도는 모습을 2시간 이상 보기']]
+};
+const seenAll = m => !Stage.ok || CHECK[m].every(([k]) => state[m].seen[k]);
+const m3StepOk = k => !!(state.m3.s[k] && state.m3.s[k].ok);
+const MISSIONS = [
+  { v: 'm1', t: '임무 1. 지구의 자전', d: '우주에서 지구를 돌려 보며 자전 방향과 속도를 찾아요.', done: () => qDone(M1Q, state.m1.q) },
+  { v: 'm2', t: '임무 2. 천구와 일주 운동', d: '지구가 도는 모습(실제)과 하늘이 도는 모습(겉보기)을 비교해요.', done: () => qDone(M2Q, state.m2.q) },
+  { v: 'm3', t: '임무 3. 우리나라 하늘 관측', d: '동·남·서·북 하늘에서 별이 어디로 갈지 예측하고 확인해요.', done: () => M3.every(s => m3StepOk(s.k)) },
+  { v: 'm4', t: '임무 4. 확인 퀴즈', d: '형성평가 12문제로 배운 내용을 정리해요.', done: () => qDone(QUIZ, state.m4.q) }
+];
+const unlocked = i => i === 0 || MISSIONS[i - 1].done();
+const m3First = () => { const i = M3.findIndex(s => !m3StepOk(s.k)); return i < 0 ? M3.length - 1 : i; };
+
+/* ───────── 화면 조각 ───────── */
+const on = c => c ? ' on' : '';
+function grp(label, act, items, cur) {
+  return `<span class="group"><span class="lbl">${label}</span>${items.map(([v, t]) => `<button class="chip${on(cur(v))}" data-act="${act}" data-v="${v}">${t}</button>`).join('')}</span>`;
+}
+// 3D 화면 아래 조작 버튼. o로 보여 줄 묶음을 고를 수 있어요.
+function ctrls(o) {
+  o = o || {};
+  const S = Stage.S;
+  let h = `<div class="ctrl"><button class="chip big${S.playing ? '' : ' play'}" data-act="play">${S.playing ? '⏸ 멈춤' : '▶ 재생'}</button>
+<button class="chip" data-act="step">+1시간</button><button class="chip" data-act="reset">↺ 처음으로</button>
+${grp('빠르기', 'spd', [[0, '느리게'], [1, '보통'], [2, '빠르게']], v => S.speed === v)}</div>`;
+  if (S.view === 'earth') h += `<div class="ctrl">${grp('보는 곳', 'ecam', [['side', '🌍 옆에서'], ['top', '⬇️ 북극 위에서']], v => S.earthCam === v)}</div>`;
+  if (S.view === 'sphere') h += `<div class="ctrl">${grp('무엇이 돌까', 'frame', [['earth', '🌍 실제: 지구가 돈다'], ['sky', '👀 겉보기: 하늘이 돈다']], v => S.frame === v)}
+${o.link !== false ? '<button class="chip big play" data-act="link" data-v="1">🔍 우리나라로 확대 → 지평선 하늘</button>' : ''}</div>`;
+  if (S.view === 'sky' && S.cam === 'out' && o.link !== false) h += '<div class="ctrl"><button class="chip" data-act="link" data-v="-1">↩ 천구로 돌아가기 (거꾸로 보기)</button></div>';
+  if (S.view === 'sky') {
+    const row = [];
+    if (o.cam !== false) row.push(grp('보는 곳', 'cam', [['out', '🔭 밖에서'], [90, '동'], [180, '남'], [270, '서'], [0, '북']], v => v === 'out' ? S.cam === 'out' : S.cam === 'look' && S.az === v));
+    if (o.target !== false) row.push(grp('관측 대상', 'tgt', [['star', '⭐ 별'], ['sun', '☀️ 태양'], ['moon', '🌙 달']], v => S.target === v));
+    const tg = [['trails', '✨ 자취'], ['arrows', '➤ 방향 화살표'], ['polar', '📐 북극성 고도']];
+    if (S.cam === 'out') tg.push(['below', '지평선 아래도 보기']);
+    if (o.tog !== false) row.push(grp('보기', 'tog', tg, k => S[k]));
+    h += `<div class="ctrl">${row.join('')}</div>`;
+    if (S.cam === 'look') h += '<p class="note">👆 화면을 손가락으로 밀면 고개를 돌려 다른 쪽 하늘도 볼 수 있어요.</p>';
+  }
+  return h;
+}
+function fill(str, key) {
+  let n = 0;
+  return str.replace(/\[(.+?)\]/g, (m, w) => { const k = key + '-' + (n++), show = ui.rev[k]; return `<button class="blank${show ? ' show' : ''}" data-act="reveal" data-k="${k}">${w}</button>`; });
+}
+function qList(m, locked) {
+  const [qs, recf] = QS[m], rec = recf();
+  return qs.map((q, i) => {
+    const r = rec[i] || { no: [] }, f = ui.fb[m + i];
+    const s = esc(q.s).replace('___', `<span class="blank${r.ok ? ' ok' : ''}">${r.ok ? esc(q.o[q.a]) : '?'}</span>`);
+    return `<div class="q${locked ? ' locked' : ''}">${q.fig ? FIGS[q.fig]() : ''}<div class="s">${i + 1}. ${s}</div>
+<div class="opts">${q.o.map((o, j) => `<button class="opt${r.no.includes(j) ? ' no' : ''}${r.ok && j === q.a ? ' sel' : ''}" data-act="ans" data-m="${m}" data-i="${i}" data-j="${j}"${locked || r.ok ? ' disabled' : ''}>${esc(o)}</button>`).join('')}</div>
+${f && !r.ok ? `<div class="fb bad">${f}</div>` : ''}${r.ok ? `<div class="fb ok">${r.no.length ? '✔ 맞아요!' : '🎯 한 번에 정답!'}</div>${q.ex ? `<div class="fb ex">💡 ${esc(q.ex)}</div>` : ''}` : ''}</div>`;
+  }).join('');
+}
+function checklist(m) {
+  return `<ul class="check">${CHECK[m].map(([k, t]) => `<li class="${state[m].seen[k] || !Stage.ok ? 'ok' : ''}">${state[m].seen[k] || !Stage.ok ? '✅' : '⬜'} ${t}</li>`).join('')}</ul>`;
+}
+function doneBox(i) {
+  const next = MISSIONS[i + 1];
+  return `<div class="done"><b>🏅 ${MISSIONS[i].t} 완료!</b>${next ? `<button class="btn small" data-act="enter" data-v="${next.v}">다음 임무 →</button>` : '<button class="btn small" data-act="enter" data-v="cert">결과 보기 →</button>'}</div>`;
+}
+function mTop(title) {
+  return `<div class="top"><button class="btn ghost small" data-act="enter" data-v="map">← 임무 목록</button><span class="title" style="font-size:24px">${title}</span><span class="grow"></span><span class="pill">🧑‍🚀 <b>${esc(state.num)} ${esc(state.name)}</b></span></div>`;
+}
+
+/* ───────── 화면 ───────── */
+function viewIntro() {
+  const form = state.num
+    ? `<p><b>${esc(state.num)} ${esc(state.name)}</b> 대원, 이어서 할까요?</p><div class="row"><button class="btn" data-act="enter" data-v="map">이어서 하기</button><button class="btn ghost small" data-act="wipe">다른 사람으로 시작</button></div>`
+    : `<label for="num">학번</label><input id="num" inputmode="numeric" maxlength="6" placeholder="예: 10312" autocomplete="off">
+<label for="name">이름</label><input id="name" maxlength="12" placeholder="이름" autocomplete="off">
+${CONFIG.SUBMIT_URL ? '<label for="ccode">수업 코드</label><input id="ccode" maxlength="30" placeholder="선생님이 알려 준 코드" autocomplete="off">' : ''}
+<div class="row" style="margin-top:12px"><button class="btn" data-act="start">탐사 시작</button></div><p id="introMsg" class="fb bad"></p>`;
+  return `<section class="intro"><div><div class="stage-slot"></div><p class="note">지구가 서쪽에서 동쪽으로 돌면, 하늘의 별은 동쪽에서 서쪽으로 도는 것처럼 보여요. 화면을 끌어서 돌려 보세요.</p></div>
+<div class="intro-r"><p class="kicker">Ⅲ. 태양계 · 2. 지구의 운동 · 자전과 일주 운동</p><h1>🌏 일주운동 관측소</h1>
+<p class="lead">지구의 <b>자전</b>과 태양·달·별의 <b>일주 운동</b>을 3D로 돌려 보며 방향을 익혀요.</p>
+<div class="panel"><h3>👩‍🏫 수업 모드</h3><p class="muted">선생님과 함께 큰 화면으로 방향을 익혀요.</p><button class="btn" data-act="enter" data-v="class">수업 모드 열기</button></div>
+<div class="panel"><h3>🧑‍🚀 탐사 모드</h3><p class="muted">혼자서 관찰하고 예측하는 임무 4개예요.</p>${form}</div>
+${CONFIG.SUBMIT_URL ? '<div style="text-align:right"><button class="btn ghost small" data-act="teacher">👩‍🏫 교사용</button></div>' : ''}</div></section>`;
+}
+function viewClass() {
+  const T = TABS[ui.tab];
+  return `<div class="top"><span class="title" style="font-size:26px">👩‍🏫 수업 모드</span><div class="tabs">${TABS.map((t, i) => `<button class="tab${on(i === ui.tab)}" data-act="tab" data-i="${i}">${t.name}</button>`).join('')}</div><span class="grow"></span><button class="btn ghost small" data-act="enter" data-v="intro">← 처음 화면</button></div>
+<div class="cl-stage"><div class="stage-slot"></div>${ctrls()}</div>
+<section class="panel concept big"><div class="row"><h3 style="flex:1">${T.title}</h3><button class="btn ghost small" data-act="revall">${T.lines.every((l, i) => fill(l, ui.tab + '-' + i).indexOf('blank"') < 0) ? '빈칸 가리기' : '빈칸 모두 보기'}</button></div>
+<ol>${T.lines.map((l, i) => `<li>${fill(l, ui.tab + '-' + i)}</li>`).join('')}</ol>
+<div class="ask">💬 ${T.ask}</div><p class="note">빈칸을 누르면 하나씩 답이 보여요. (학습지 8~9쪽)</p></section>`;
+}
+function viewMap() {
+  const n = MISSIONS.filter(m => m.done()).length;
+  return `<div class="top"><span class="title" style="font-size:26px">🧑‍🚀 탐사 임무</span><span class="pill">진행 <b>${n}/4</b></span><span class="grow"></span><span class="pill">🧑‍🚀 <b>${esc(state.num)} ${esc(state.name)}</b></span><button class="btn ghost small" data-act="enter" data-v="cert">📋 결과</button><button class="btn ghost small" data-act="enter" data-v="intro">← 처음 화면</button></div>
+<div class="mcards">${MISSIONS.map((m, i) => { const ok = unlocked(i), d = m.done(); return `<section class="panel mcard${ok ? '' : ' lock'}"><span class="n">${d ? '<span class="st-done">✔ 완료</span>' : ok ? '도전 가능' : '🔒 앞 임무를 먼저 마쳐요'}</span><h3>${m.t}</h3><p class="muted">${m.d}</p><div class="row"><button class="btn${d ? ' ghost' : ''} small" data-act="enter" data-v="${m.v}"${ok ? '' : ' disabled'}>${d ? '다시 보기' : '시작'}</button></div></section>`; }).join('')}</div>
+${MISSIONS.every(m => m.done()) ? '<div class="done"><b>🎉 모든 임무를 마쳤어요!</b><button class="btn small" data-act="enter" data-v="cert">결과 보기 →</button></div>' : ''}`;
+}
+function missionPage(i, title, side) {
+  return mTop(title) + `<div class="lesson"><div><div class="stage-slot"></div>${ctrls()}</div><aside class="panel">${side}${MISSIONS[i].done() ? doneBox(i) : ''}</aside></div>`;
+}
+function viewM1() {
+  const ok = seenAll('m1');
+  return missionPage(0, '🌍 임무 1. 지구의 자전', `<h3>🔭 관찰하기</h3><p class="muted">▶ 재생이나 +1시간을 눌러 지구를 돌려 보세요. 빨간 점이 우리나라예요.</p>${checklist('m1')}
+<h3>📝 탐사 보고서</h3>${ok ? '' : '<p class="fb bad">관찰을 먼저 마치면 문제를 풀 수 있어요.</p>'}${qList('m1', !ok)}`);
+}
+function viewM2() {
+  const ok = seenAll('m2');
+  return missionPage(1, '✨ 임무 2. 천구와 일주 운동', `<h3>🔭 관찰하기</h3><p class="muted">'무엇이 돌까'를 바꿔 가며 재생해 보세요. 두 모습에서 지구와 별 사이의 움직임이 같은지 살펴봐요.</p>${checklist('m2')}
+<h3>📝 탐사 보고서</h3>${ok ? '' : '<p class="fb bad">관찰을 먼저 마치면 문제를 풀 수 있어요.</p>'}${qList('m2', !ok)}`);
+}
+function viewM3() {
+  const cur = state.m3.step, st = M3[cur], first = m3First();
+  const pills = `<div class="steps">${M3.map((s, i) => `<button class="stp${on(i === cur)}${m3StepOk(s.k) ? ' ok' : ''}" data-act="m3go" data-i="${i}"${i > first ? ' disabled' : ''}>${s.title}</button>`).join('')}</div>`;
+  const okNow = m3StepOk(st.k), f = ui.fb.m3;
+  const nextBtn = okNow && cur < M3.length - 1 ? `<div class="row" style="margin-top:10px"><button class="btn small" data-act="m3next">다음: ${M3[cur + 1].title} →</button></div>` : '';
+  let side = '';
+  if (st.az != null) {
+    const s = state.m3.s[st.k] || { no: [] };
+    side = `<h3>🧭 ${st.title}의 별</h3><p>관측자가 <b>${st.title}</b>을 보고 있어요. 화면 아래의 왼쪽·오른쪽 방향을 확인하고, 별이 어느 쪽으로 움직일지 <b>예측</b>해 보세요.</p>
+<div class="popts">${PRED.map(o => `<button class="popt${s.no.includes(o) ? ' no' : ''}${s.ok && o === st.a ? ' sel' : ''}" data-act="pred" data-o="${o}"${s.ok ? ' disabled' : ''}>${arrowSvg(o)}<span>${ARW[o]}</span></button>`).join('')}</div>
+${f ? `<div class="fb ${f.ok ? 'ok' : 'bad'}">${f.msg}</div>` : ''}${s.ok ? `<div class="fb ex">💡 ${st.ex}</div><div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="m3replay">▶ 다시 보기</button></div>` : ''}${nextBtn}`;
+  } else {
+    const s = state.m3.s.sun || { no: [] };
+    side = `<h3>☀️ 태양의 일주 운동</h3><p>아침 6시, 태양이 막 떠오르고 있어요. 태양은 하루 동안 어떤 순서로 움직일까요?</p>
+<div class="opts">${SUN_O.map((o, j) => `<button class="opt${s.no.includes(j) ? ' no' : ''}${s.ok && j === st.a ? ' sel' : ''}" data-act="pred" data-o="${j}"${s.ok ? ' disabled' : ''}>${o}</button>`).join('')}</div>
+${f ? `<div class="fb ${f.ok ? 'ok' : 'bad'}">${f.msg}</div>` : ''}${s.ok ? `<div class="fb ex">💡 ${st.ex}</div><div class="row" style="margin-top:8px"><button class="btn ghost small" data-act="m3replay">▶ 다시 보기</button></div>` : ''}${nextBtn}`;
+  }
+  const locked = st.az != null && !(state.m3.s[st.k] || {}).ok;
+  const below = locked ? '<p class="note">👆 화면을 손가락으로 밀면 고개를 돌려 볼 수 있어요. 예측을 고르면 4시간 동안의 움직임을 보여 줘요.</p>'
+    : st.k === 'sun' && !m3StepOk('sun') ? '' : ctrls({ link: false });
+  return mTop('🧭 임무 3. 우리나라 하늘 관측') + `<div class="lesson"><div><div class="stage-slot"></div>${below}</div><aside class="panel">${pills}${side}${MISSIONS[2].done() ? doneBox(2) : ''}</aside></div>`;
+}
+function viewM4() {
+  const [qs, recf] = QS.m4, rec = recf();
+  return mTop('📝 임무 4. 확인 퀴즈') + `<p class="muted">모두 ${qs.length}문제예요. 틀리면 힌트를 보고 다시 골라요. 처음 고른 답이 정답인 문제 수가 기록돼요. (지금 ${okCount(qs, rec)}/${qs.length})</p>
+<div class="quiz">${qList('m4', false).split('<div class="q').slice(1).map(x => `<section class="panel"><div class="q${x}</section>`).join('')}</div>${MISSIONS[3].done() ? doneBox(3) : ''}`;
+}
+function scoreRows() {
+  const p = M3.slice(0, 5).filter(s => (state.m3.s[s.k] || {}).ok && !state.m3.s[s.k].no.length).length;
+  return [
+    ['임무 1. 지구의 자전', MISSIONS[0].done() ? `완료 · 한 번에 맞힘 ${firstOk(M1Q, state.m1.q)}/${M1Q.length}` : '진행 중'],
+    ['임무 2. 천구와 일주 운동', MISSIONS[1].done() ? `완료 · 한 번에 맞힘 ${firstOk(M2Q, state.m2.q)}/${M2Q.length}` : '진행 중'],
+    ['임무 3. 하늘 관측', MISSIONS[2].done() ? `완료 · 한 번에 예측 성공 ${p}/5` : '진행 중'],
+    ['임무 4. 확인 퀴즈', MISSIONS[3].done() ? `완료 · 한 번에 맞힘 ${firstOk(QUIZ, state.m4.q)}/${QUIZ.length}` : '진행 중']
+  ];
+}
+function viewCert() {
+  return `<div class="top"><button class="btn ghost small" data-act="enter" data-v="map">← 임무 목록</button><span class="title" style="font-size:26px">📋 탐사 결과</span></div>
+<section class="panel" style="max-width:640px"><h3>🧑‍🚀 ${esc(state.num)} ${esc(state.name)}</h3>
+<dl class="score">${scoreRows().map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
+${CONFIG.SUBMIT_URL ? `<p class="muted">진행 상황은 임무를 풀 때마다 선생님께 자동으로 보내져요.</p><div class="row"><button class="btn" data-act="submit">📤 지금 선생님께 보내기</button></div>${ui.submitMsg ? `<p class="fb">${ui.submitMsg}</p>` : ''}` : '<p class="muted">이 화면을 캡처해서 제출하세요.</p>'}
+<p class="note">여러 학생이 함께 쓰는 기기라면, 다 마친 뒤 기록을 지워 주세요. <button class="btn ghost small" data-act="wipe">🗑 이 기기에서 내 기록 지우기</button></p></section>`;
+}
+
+/* ───────── 교사 화면 ─────────
+   교사 코드는 이 파일에 없고 Apps Script에서만 확인해요. */
+function viewTeacher() {
+  const T = ui.teacher || (ui.teacher = { data: null, code: '', msg: '', cls: '' });
+  const head = `<div class="top"><span class="title" style="font-size:24px">👩‍🏫 교사 화면 · 일주운동</span><span class="grow"></span>${T.data ? '<button class="btn ghost small" data-act="tload">🔄 새로고침</button>' : ''}<button class="btn ghost small" data-act="enter" data-v="intro">← 처음 화면</button></div>`;
+  if (!T.data) return head + `<section class="panel" style="max-width:440px"><h3>교사 코드 입력</h3>
+<div class="row"><input id="tcode" type="password" maxlength="30" placeholder="교사 코드" autocomplete="off" style="flex:1;min-width:160px"><button class="btn" data-act="tload">결과 보기</button></div>
+${T.msg ? `<p class="fb ${T.msg.startsWith('불러') ? '' : 'bad'}">${T.msg}</p>` : ''}</section>`;
+  const { headers, rows } = T.data;
+  const iNum = headers.indexOf('학번'), iTime = headers.indexOf('마지막 활동');
+  const cls = r => { const n = String(r[iNum] || ''); return n.length > 2 ? n.slice(0, -2) : ''; };
+  const clsName = c => c.length === 3 ? `${c[0]}학년 ${+c.slice(1)}반` : c;
+  const classes = [...new Set(rows.map(cls))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'ko', { numeric: true }));
+  const list = rows.filter(r => !T.cls || cls(r) === T.cls).sort((a, b) => String(a[iNum]).localeCompare(String(b[iNum]), 'ko', { numeric: true }));
+  const order = headers.map((h, i) => i).filter(i => i !== iTime).concat(iTime >= 0 ? [iTime] : []);
+  const mi = headers.map((h, i) => h.startsWith('임무') ? i : -1).filter(i => i >= 0);
+  const cell = v => v === '완료' ? '<span class="tok">✔ 완료</span>' : v === '-' || v === '' ? '<span class="muted">–</span>' : esc(v);
+  return head + `<div class="row"><button class="btn small${T.cls ? ' ghost' : ''}" data-act="tcls" data-c="">전체</button>${classes.map(c => `<button class="btn small${T.cls === c ? '' : ' ghost'}" data-act="tcls" data-c="${esc(c)}">${clsName(c)}</button>`).join('')}</div>
+<div class="tstats"><div>참여 학생<b>${list.length}명</b></div>${mi.map(i => `<div>${esc(headers[i])} 완료<b>${list.filter(r => r[i] === '완료').length}명</b></div>`).join('')}</div>
+<section class="panel"><div class="tbl-wrap"><table class="ttbl"><thead><tr>${order.map(i => `<th>${esc(headers[i])}</th>`).join('')}</tr></thead><tbody>
+${list.length ? list.map(r => `<tr>${order.map(i => `<td>${i === iTime ? `<small>${esc(r[i])}</small>` : cell(r[i])}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${order.length}" class="muted" style="text-align:center">아직 참여한 학생이 없어요.</td></tr>`}
+</tbody></table></div><p class="note">"한 번에"는 처음 고른 답이 정답이었던 문제 수예요. 학번 앞 3자리로 반을 나눠요. (예: 10312 → 1학년 3반)</p></section>`;
+}
+async function teacherLoad() {
+  const T = ui.teacher, inp = document.getElementById('tcode');
+  if (inp) T.code = inp.value.trim();
+  if (!T.code) { T.msg = '교사 코드를 입력해 주세요.'; render(); return; }
+  T.msg = '불러오는 중…'; render();
+  try {
+    if (!(await hello())) { T.msg = 'Apps Script가 아직 예전 버전이에요. 이 폴더의 apps-script.gs로 바꾸고 새 버전으로 배포해 주세요. (README 참고)'; render(); return; }
+    const out = await post({ lesson: CONFIG.LESSON, action: 'list', teacher: T.code });
+    if (out.ok) { T.data = { headers: out.headers || [], rows: out.rows || [] }; T.msg = ''; }
+    else T.msg = out.error === 'teacher' ? '교사 코드가 맞지 않아요.' : '결과를 불러오지 못했어요.';
+  } catch (err) { T.msg = '인터넷 연결을 확인해 주세요.'; }
+  render();
+}
+
+/* ───────── 그리기 ───────── */
+const app = document.getElementById('app');
+const VIEWS = { intro: viewIntro, class: viewClass, map: viewMap, m1: viewM1, m2: viewM2, m3: viewM3, m4: viewM4, cert: viewCert, teacher: viewTeacher };
+function render() {
+  app.innerHTML = (VIEWS[state.view] || viewIntro)();
+  const slot = app.querySelector('.stage-slot'); if (slot) slot.replaceWith(Stage.el);
+}
+function tabSetup() {
+  const T = TABS[ui.tab];
+  Stage.set(Object.assign({ playing: false, trails: false, arrows: true, polar: false, below: false }, T.setup));
+  Stage.reset(); Stage.preset();
+}
+function m3Setup() {
+  const st = M3[state.m3.step], solved = m3StepOk(st.k);
+  ui.fb = {};
+  if (st.az != null) Stage.set({ view: 'sky', lat: 37.5, target: 'star', cam: 'look', az: st.az, trails: solved, arrows: solved, below: false, polar: false, playing: false });
+  else Stage.set({ view: 'sky', lat: 37.5, target: 'sun', cam: 'out', trails: solved, arrows: solved, below: false, polar: false, playing: false });
+  Stage.reset(); Stage.preset();
+  if (solved) Stage.replay(st.k === 'sun' ? 12 : 4, st.k === 'sun' ? 2 : 1.2);
+}
+function enter(v) {
+  if (['map', 'm1', 'm2', 'm3', 'm4', 'cert'].includes(v) && !state.num) v = 'intro';
+  const i = MISSIONS.findIndex(m => m.v === v);
+  if (i > 0 && !unlocked(i)) v = 'map';
+  state.view = v; ui.fb = {}; ui.submitMsg = '';
+  if (v === 'intro') { Stage.set({ view: 'sphere', frame: 'sky', playing: true, speed: 1, arrows: true }); Stage.preset(); }
+  if (v === 'class') tabSetup();
+  // 관찰 체크는 임무 화면에서 본 시간만 세요 (수업 모드에서 본 시간은 빼요)
+  if (CHECK[v]) CHECK[v].forEach(([k]) => { delete Stage.watch[k]; });
+  if (v === 'm1') { Stage.set({ view: 'earth', earthCam: 'side', playing: false, speed: 1 }); Stage.reset(); Stage.preset(); }
+  if (v === 'm2') { Stage.set({ view: 'sphere', frame: 'earth', playing: false, speed: 1 }); Stage.reset(); Stage.preset(); }
+  if (v === 'm3') { state.m3.step = Math.min(state.m3.step, m3First()); m3Setup(); }
+  save(); render(); window.scrollTo(0, 0);
+}
+Stage.hooks.watch = k => {
+  const m = state.view === 'm1' || state.view === 'm2' ? state[state.view] : null;
+  if (m && CHECK[state.view].some(([kk]) => kk === k) && !m.seen[k]) { m.seen[k] = true; save(); render(); }
+};
+Stage.hooks.change = why => {
+  // 수업 모드에서 잇기 장면이 끝나면 그 화면에 맞는 탭 카드로 바꿔요 (3D 화면은 그대로)
+  if (state.view === 'class') { if (why === 'toSky') ui.tab = 2; if (why === 'toSphere') ui.tab = 1; }
+  if (Stage.el.isConnected) render();
+};
+
+/* ───────── 동작 ───────── */
+app.addEventListener('click', async e => {
+  const t = e.target.closest('[data-act]'); if (!t || t.disabled) return;
+  const a = t.dataset.act, v = t.dataset.v, S = Stage.S;
+  if (a === 'enter') enter(v);
+  else if (a === 'tab') { ui.tab = +t.dataset.i; tabSetup(); render(); }
+  else if (a === 'reveal') { ui.rev[t.dataset.k] = !ui.rev[t.dataset.k]; render(); }
+  else if (a === 'revall') {
+    const T = TABS[ui.tab], keys = [];
+    T.lines.forEach((l, i) => { let n = 0; l.replace(/\[(.+?)\]/g, () => keys.push(ui.tab + '-' + i + '-' + (n++))); });
+    const show = !keys.every(k => ui.rev[k]); keys.forEach(k => { ui.rev[k] = show; }); render();
+  }
+  else if (a === 'play') { Stage.play(); render(); }
+  else if (a === 'step') { Stage.step(1); render(); }
+  else if (a === 'reset') { Stage.reset(); render(); }
+  else if (a === 'spd') { Stage.set({ speed: +v }); render(); }
+  else if (a === 'ecam') { Stage.set({ earthCam: v }); render(); }
+  else if (a === 'frame') { Stage.set({ frame: v }); Stage.reset(); render(); }
+  else if (a === 'cam') { if (v === 'out') Stage.set({ cam: 'out' }); else Stage.set({ cam: 'look', az: +v }); render(); }
+  else if (a === 'tgt') { Stage.set({ target: v }); render(); }
+  else if (a === 'link') { Stage.link(+v); render(); }
+  else if (a === 'tog') { const k = v; Stage.set({ [k]: !S[k] }); if (k === 'trails') Stage.trailReset(); render(); }
+  else if (a === 'start') startMission(t);
+  else if (a === 'wipe') {
+    if (confirm('이 기기에 저장된 탐사 기록을 모두 지울까요? (선생님께 보낸 결과는 지워지지 않아요)')) {
+      state = fresh(); try { localStorage.removeItem(KEY); } catch (err) {} enter('intro');
+    }
+  }
+  else if (a === 'ans') {
+    const m = t.dataset.m, i = +t.dataset.i, j = +t.dataset.j, [qs, recf] = QS[m], rec = recf(), q = qs[i];
+    if (m === 'm1' || m === 'm2') { if (!seenAll(m)) return; }
+    const r = rec[i] || (rec[i] = { no: [] }); if (r.ok) return;
+    if (j === q.a) { r.ok = true; ui.fb[m + i] = ''; }
+    else { if (!r.no.includes(j)) r.no.push(j); ui.fb[m + i] = `🔎 다시 생각해 봐요.${q.h ? ' ' + esc(q.h) : ''}`; }
+    save(); render();
+  }
+  else if (a === 'pred') {
+    const st = M3[state.m3.step], s = state.m3.s[st.k] || (state.m3.s[st.k] = { no: [] }); if (s.ok) return;
+    const o = st.k === 'sun' ? +t.dataset.o : t.dataset.o;
+    if (o === st.a) { s.ok = true; ui.fb.m3 = { ok: true, msg: s.no.length ? '✔ 맞아요! 직접 관찰해서 찾았어요.' : '🎯 예측 성공! 화면에서 확인해 보세요.' }; }
+    else { if (!s.no.includes(o)) s.no.push(o); ui.fb.m3 = { ok: false, msg: '🤔 예측과 실제를 비교해 보세요. 화면에서 노란 화살표와 자취를 보고 다시 골라요.' }; }
+    if (st.az != null) Stage.set({ cam: 'look', az: st.az });
+    Stage.replay(st.k === 'sun' ? 12 : 4, st.k === 'sun' ? 2 : 1.2);
+    save(); render();
+  }
+  else if (a === 'm3replay') { const st = M3[state.m3.step]; if (st.az != null) Stage.set({ cam: 'look', az: st.az }); Stage.replay(st.k === 'sun' ? 12 : 4, st.k === 'sun' ? 2 : 1.2); render(); }
+  else if (a === 'm3go') { state.m3.step = +t.dataset.i; m3Setup(); save(); render(); }
+  else if (a === 'm3next') { state.m3.step = Math.min(M3.length - 1, state.m3.step + 1); m3Setup(); save(); render(); window.scrollTo(0, 0); }
+  else if (a === 'teacher') { ui.teacher = null; state.view = 'teacher'; render(); }
+  else if (a === 'tload') teacherLoad();
+  else if (a === 'tcls') { ui.teacher.cls = t.dataset.c; render(); }
+  else if (a === 'submit') submit();
+});
+async function startMission(btn) {
+  const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const num = val('num'), name = val('name'), msg = document.getElementById('introMsg');
+  if (!num || !name) { msg.textContent = '학번과 이름을 모두 입력해 주세요.'; return; }
+  if (CONFIG.SUBMIT_URL) {
+    const code = val('ccode');
+    if (!code) { msg.textContent = '수업 코드도 입력해 주세요.'; return; }
+    msg.textContent = '수업 코드를 확인하는 중…'; btn.disabled = true;
+    try {
+      const out = await post({ lesson: CONFIG.LESSON, action: 'check', code });
+      if (!out.ok) { msg.textContent = '수업 코드가 맞지 않아요. 다시 확인해 주세요.'; btn.disabled = false; return; }
+    } catch (err) { /* 인터넷이 잠시 안 되면 일단 시작하고, 나중에 다시 보내요 */ }
+    state.code = code;
+  }
+  state.num = num; state.name = name;
+  // 선생님 시험용: 학번 00000으로 들어오면 바로 결과(보내기) 화면으로
+  if (num === '00000') { enter('cert'); ui.submitMsg = '🧪 선생님 시험 모드예요. 보내기를 눌러 구글 시트에 줄이 생기는지 확인하세요.'; render(); return; }
+  enter('map');
+}
+
+/* ───────── 선생님께 진행 상황 보내기 ─────────
+   임무를 풀 때마다 자동으로 보내요. 시트 '일주운동 현황' 탭에 학생 한 명당 한 줄로 저장돼요. */
+async function post(body) {
+  const res = await fetch(CONFIG.SUBMIT_URL, { method: 'POST', body: JSON.stringify(body) });
+  return res.json();
+}
+// 예전 Apps Script(태양계 탐사대 전용)에 보내면 엉뚱한 탭에 저장될 수 있어서, 새 버전인지 먼저 확인해요
+async function hello() {
+  if (ui.server != null) return ui.server;
+  const out = await post({ action: 'hello' });
+  ui.server = !!(out && out.lessons);
+  return ui.server;
+}
+const COLS = ['임무 1 자전', '임무 2 천구', '임무 3 하늘 관측', '임무 4 확인 퀴즈', '자전 문제 (한 번에)', '천구 문제 (한 번에)', '하늘 관측 (한 번에)', '확인 퀴즈 (한 번에)', '틀린 예측'];
+function progressVals() {
+  const stat = (done, a, b) => done ? '완료' : a ? `진행 ${a}/${b}` : '-';
+  const m3ok = M3.filter(s => m3StepOk(s.k)).length;
+  const pred = M3.filter(s => (state.m3.s[s.k] || {}).ok && !state.m3.s[s.k].no.length).length;
+  const wrong = M3.slice(0, 5).filter(s => (state.m3.s[s.k] || { no: [] }).no.length).map(s => `${s.title}: ${state.m3.s[s.k].no.map(o => s.k === 'sun' ? SUN_O[o] : ARW[o]).join(', ')}`).join(' / ');
+  return [
+    stat(MISSIONS[0].done(), okCount(M1Q, state.m1.q), M1Q.length), stat(MISSIONS[1].done(), okCount(M2Q, state.m2.q), M2Q.length),
+    stat(MISSIONS[2].done(), m3ok, M3.length), stat(MISSIONS[3].done(), okCount(QUIZ, state.m4.q), QUIZ.length),
+    `${firstOk(M1Q, state.m1.q)}/${M1Q.length}`, `${firstOk(M2Q, state.m2.q)}/${M2Q.length}`, `${pred}/${M3.length}`, `${firstOk(QUIZ, state.m4.q)}/${QUIZ.length}`, wrong
+  ];
+}
+async function sync(force) {
+  if (!CONFIG.SUBMIT_URL || !state.code || !state.num) return null;
+  const vals = progressVals(), sig = [state.num, state.name].concat(vals).join('|');
+  if (!force && sig === state.sentSig) return null;
+  try {
+    if (!(await hello())) return { ok: false, error: 'server' };
+    const out = await post({ lesson: CONFIG.LESSON, action: 'save', code: state.code, num: state.num, name: state.name, cols: COLS, vals });
+    if (out.ok) { state.sentSig = sig; state.sent = true; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+    return out;
+  } catch (err) { return { ok: false, error: 'net' }; }
+}
+async function submit() {
+  if (!state.code) { ui.submitMsg = '수업 코드 없이 시작해서 보낼 수 없어요. 처음 화면에서 다시 시작해 주세요.'; render(); return; }
+  ui.submitMsg = '보내는 중…'; render();
+  const out = await sync(true);
+  ui.submitMsg = out && out.ok ? '✔ 선생님께 보냈어요.' : out && out.error === 'code' ? '수업 코드가 맞지 않아요.' : out && out.error === 'server' ? '아직 결과를 받을 준비가 안 됐어요. 선생님께 알려 주세요. (이 화면을 캡처해서 내도 돼요)' : '인터넷 연결을 확인해 주세요. 계속 안 되면 이 화면을 캡처해서 내세요.';
+  render();
+}
+
+enter('intro');
+</script>
+</body>
+</html>
