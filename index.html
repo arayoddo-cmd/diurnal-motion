@@ -156,6 +156,21 @@ svg.fig{width:100%;max-height:250px;border-radius:10px;background:#0b1230;displa
 .ttbl th,.ttbl td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
 .ttbl th{color:var(--muted);font-weight:500}
 .tok{color:var(--ok);font-weight:700}
+
+/* 보너스: 자전 지구 발사대 */
+.gwrap{position:relative;max-width:620px;margin:0 auto}
+.gwrap canvas{width:100%;height:auto;display:block;border-radius:var(--r);border:1px solid var(--line);background:#050914;touch-action:manipulation}
+.ghud{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.gmsg{min-height:1.6em;font-weight:700;margin-top:6px}
+.gover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#050914d9;border-radius:var(--r);text-align:center;padding:20px}
+.gover .row{justify-content:center}
+.lvls{display:grid;gap:10px;margin:10px 0}
+.lvl{text-align:left;background:var(--chip);border:2px solid transparent;border-radius:14px;padding:12px 16px;display:flex;flex-direction:column;gap:2px}
+.lvl.on{border-color:var(--accent)}
+.lvl:disabled{opacity:.45;cursor:not-allowed}
+.lvl span{font-size:14px;color:var(--muted)}
+.gpick{justify-content:center;margin:10px 0}
+.gpick b{font-family:"Do Hyeon";font-size:30px;min-width:110px;text-align:center}
 </style>
 </head>
 <body>
@@ -919,7 +934,7 @@ const FIGS = { dipper: figDipper, cass: figCass, arcs: figArcs, E: () => figTrai
 
 /* ───────── 저장 ───────── */
 const KEY = 'diurnal-motion-v1';
-const fresh = () => ({ view: 'intro', num: '', name: '', code: '', m1: { seen: {}, q: {} }, m2: { seen: {}, q: {} }, m3: { step: 0, s: {}, lat: {}, q: {} }, m4: { q: {} }, sentSig: '', sent: false });
+const fresh = () => ({ view: 'intro', num: '', name: '', code: '', m1: { seen: {}, q: {} }, m2: { seen: {}, q: {} }, m3: { step: 0, s: {}, lat: {}, q: {} }, m4: { q: {} }, game: { cleared: 0, plays: 0 }, sentSig: '', sent: false });
 let state = fresh();
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.m1) state = Object.assign(fresh(), s, { view: 'intro' }); } catch (e) {}
 const ui = { tab: 0, rev: {}, fb: {}, server: null, teacher: null, submitMsg: '' };
@@ -1025,7 +1040,8 @@ function viewMap() {
   const n = MISSIONS.filter(m => m.done()).length;
   return `<div class="top"><span class="title" style="font-size:26px">🧑‍🚀 탐사 임무</span><span class="pill">진행 <b>${n}/4</b></span><span class="grow"></span><span class="pill">🧑‍🚀 <b>${esc(state.num)} ${esc(state.name)}</b></span><button class="btn ghost small" data-act="enter" data-v="cert">📋 결과</button><button class="btn ghost small" data-act="enter" data-v="intro">← 처음 화면</button></div>
 <div class="mcards">${MISSIONS.map((m, i) => { const ok = unlocked(i), d = m.done(); return `<section class="panel mcard${ok ? '' : ' lock'}"><span class="n">${d ? '<span class="st-done">✔ 완료</span>' : ok ? '도전 가능' : '🔒 앞 임무를 먼저 마쳐요'}</span><h3>${m.t}</h3><p class="muted">${m.d}</p><div class="row"><button class="btn${d ? ' ghost' : ''} small" data-act="enter" data-v="${m.v}"${ok ? '' : ' disabled'}>${d ? '다시 보기' : '시작'}</button></div></section>`; }).join('')}</div>
-${MISSIONS.every(m => m.done()) ? '<div class="done"><b>🎉 모든 임무를 마쳤어요!</b><button class="btn small" data-act="enter" data-v="cert">결과 보기 →</button></div>' : ''}`;
+${MISSIONS.every(m => m.done()) ? '<div class="done"><b>🎉 모든 임무를 마쳤어요!</b><button class="btn small" data-act="enter" data-v="cert">결과 보기 →</button></div>' : ''}
+<section class="panel mcard${gOpen() ? '' : ' lock'}" style="margin-top:14px"><span class="n">보너스</span><h3>🚀 자전 지구 발사대</h3><p class="muted">${gOpen() ? `자전하는 지구에서 로켓을 쏴 위성을 맞혀요. 3단계 도전 (${state.game.cleared}/3 클리어)` : '임무 4(확인 퀴즈)를 마치면 열려요.'}</p><div class="row"><button class="btn small" data-act="enter" data-v="game"${gOpen() ? '' : ' disabled'}>놀기</button></div></section>`;
 }
 function missionPage(i, title, side) {
   return mTop(title) + `<div class="lesson"><div><div class="stage-slot"></div>${ctrls()}</div><aside class="panel">${side}${MISSIONS[i].done() ? doneBox(i) : ''}</aside></div>`;
@@ -1073,7 +1089,8 @@ function scoreRows() {
     ['임무 1. 지구의 자전', MISSIONS[0].done() ? `완료 · 한 번에 맞힘 ${firstOk(M1Q, state.m1.q)}/${M1Q.length}` : '진행 중'],
     ['임무 2. 천구와 일주 운동', MISSIONS[1].done() ? `완료 · 한 번에 맞힘 ${firstOk(M2Q, state.m2.q)}/${M2Q.length}` : '진행 중'],
     ['임무 3. 하늘 관측', MISSIONS[2].done() ? `완료 · 한 번에 예측 성공 ${p}/5` : '진행 중'],
-    ['임무 4. 확인 퀴즈', MISSIONS[3].done() ? `완료 · 한 번에 맞힘 ${firstOk(QUIZ, state.m4.q)}/${QUIZ.length}` : '진행 중']
+    ['임무 4. 확인 퀴즈', MISSIONS[3].done() ? `완료 · 한 번에 맞힘 ${firstOk(QUIZ, state.m4.q)}/${QUIZ.length}` : '진행 중'],
+    ['보너스 발사대', `${state.game.cleared}/3단계 클리어`]
   ];
 }
 function viewCert() {
@@ -1121,9 +1138,181 @@ async function teacherLoad() {
   render();
 }
 
+/* ───────── 보너스: 자전 지구 발사대 ─────────
+   북극 위에서 본 지구가 시계 반대 방향(서 → 동)으로 돌아요. 태양은 오른쪽에 있어서
+   우리나라가 오른쪽(태양 쪽)을 향하면 낮 12시, 왼쪽을 향하면 밤 12시예요. 1시간에 15°. */
+const G_W = 600, G_C = 300, G_RE = 105, G_RO = 235, G_END = 330, G_SPEED = 340, G_HIT = 24;
+const G_PAD = G_RE * Math.cos(37.5 * D2R); // 북극 위에서 보면 우리나라(북위 37.5°)는 지구 가장자리보다 조금 안쪽
+const G_LEVELS = [
+  { name: '1단계 · 연습 발사', desc: '멈춰 있는 위성 3개를 맞혀요. 지구가 돌다가 우리나라가 위성 바로 아래를 지날 때 발사!', hph: 1, shots: 8, sats: [[60, 0], [200, 0], [300, 0]] },
+  { name: '2단계 · 밤에만 발사', desc: '위성이 움직여요. 비밀 작전이라 우리나라가 밤(오후 6시~오전 6시)일 때만 쏠 수 있어요!', hph: 1.5, shots: 9, sats: [[100, -12], [200, 5], [300, -4]] },
+  { name: '3단계 · 시간 계산 발사', desc: '지구가 멈춰 있어요. 위성 쪽으로 가려면 몇 시간 기다려야 할지 계산해서 발사해요. (5문제 중 4문제 이상)' }
+];
+// 3단계 문제: 지금 시각 h, 정답 k시간 (k가 12보다 크면 위성이 시계 방향 쪽에 있는 문제)
+const G3 = [{ h: 9, k: 3 }, { h: 20, k: 5 }, { h: 7, k: 21 }, { h: 15, k: 8 }, { h: 23, k: 18 }];
+const G_LAND = [[0, 0.79, 16], [25, 0.55, 26], [95, 0.45, 20], [160, 0.6, 30], [235, 0.5, 24], [300, 0.62, 22]];
+const G_STARS = (() => { const r = rng(11), a = []; for (let i = 0; i < 90; i++) a.push([r() * G_W, r() * G_W, r() * 1.4 + 0.4]); return a; })();
+let G = null; // 게임 진행 상태 (저장하지 않아요)
+const gOpen = () => MISSIONS[3].done();
+const gLevel = () => { const open = Math.min(state.game.cleared, 2); return Math.min(ui.gLv == null ? open : ui.gLv, open); };
+const gXY = (a, r) => [G_C + r * Math.cos(a * D2R), G_C - r * Math.sin(a * D2R)];
+const gPad = () => (G.hour - 12) * 15;
+const gH24 = h => ((h % 24) + 24) % 24;
+const gNight = h => gH24(h) >= 18 || gH24(h) < 6;
+function gClock(h) {
+  h = gH24(h); const H = Math.floor(h + 1e-6), m = Math.floor((h - H) * 6 + 1e-6) * 10;
+  return `${H < 12 ? '오전' : '오후'} ${H % 12 || 12}시${m ? ' ' + m + '분' : ''}`;
+}
+const gDir = q => q.k < 12 ? `자전 방향(시계 반대 방향)으로 ${q.k * 15}°` : `시계 방향으로 ${(24 - q.k) * 15}°`;
+const gWhy = q => q.k < 12 ? `${q.k * 15}° ÷ 15° = ${q.k}시간` : `지구는 시계 반대 방향으로만 돌아서 360° − ${(24 - q.k) * 15}° = ${q.k * 15}°를 돌아야 해요. ${q.k * 15}° ÷ 15° = ${q.k}시간`;
+
+function gNew(lv) {
+  const L = G_LEVELS[lv];
+  G = { lv, hour: 6, rockets: [], pops: [], over: null, raf: 0, last: 0, msg: '' };
+  if (L.sats) { G.shots = L.shots; G.sats = L.sats.map(([a, v]) => ({ a, v, hit: false })); }
+  else { G.round = 0; G.right = 0; gRound(); }
+}
+function gRound() {
+  const q = G3[G.round];
+  Object.assign(G, { hour: q.h, t: { a: (q.h - 12) * 15 + q.k * 15, v: 0, hit: false }, pick: 1, fired: false, anim: 0, res: null, rockets: [] });
+}
+const gTargets = () => G.sats || [G.t];
+function gFire() { G.rockets.push({ a: gPad(), r0: G_PAD + 4, r: G_PAD + 4, hit: false, done: false }); }
+function gShoot() {
+  if (!G || G.over || !G.sats || G.shots <= 0) return;
+  if (G.lv === 1 && !gNight(G.hour)) { G.msg = '☀️ 지금 우리나라는 낮이에요. 밤(오후 6시)이 될 때까지 기다려요!'; return; }
+  G.shots--; G.msg = ''; gFire();
+}
+function gEnd(win) {
+  G.over = { win }; state.game.plays++;
+  if (win && G.lv + 1 > state.game.cleared) state.game.cleared = G.lv + 1;
+  save(); render();
+}
+function gStep(dt) {
+  const L = G_LEVELS[G.lv];
+  if (G.sats) { G.hour += L.hph * dt; if (!G.over) G.sats.forEach(s => { s.a += s.v * L.hph * dt; }); }
+  else if (G.anim > 0) { const d = Math.min(G.anim, 6 * dt); G.hour += d; G.anim -= d; if (G.anim <= 1e-6) { G.anim = 0; gFire(); } }
+  G.rockets.forEach(r => {
+    r.r += G_SPEED * dt;
+    const [x, y] = gXY(r.a, r.r);
+    gTargets().forEach(s => {
+      if (r.done || s.hit) return;
+      const [sx, sy] = gXY(s.a, G_RO);
+      if (Math.hypot(x - sx, y - sy) < G_HIT) { s.hit = r.hit = r.done = true; G.pops.push({ x: sx, y: sy, t: 0 }); }
+    });
+    if (r.r > G_END) r.done = true;
+    if (r.done && G.sats) { const n = G.sats.filter(s => !s.hit).length; G.msg = r.hit ? (n ? `🎯 명중! 남은 위성 ${n}개` : '🎯 명중!') : '💨 빗나갔어요. 우리나라가 위성 바로 아래에 올 때 쏴 보세요.'; }
+  });
+  G.rockets = G.rockets.filter(r => !r.done);
+  G.pops.forEach(p => { p.t += dt; }); G.pops = G.pops.filter(p => p.t < 1.2);
+  if (G.over) return;
+  if (G.sats) {
+    if (G.sats.every(s => s.hit)) gEnd(true);
+    else if (G.shots <= 0 && !G.rockets.length) gEnd(false);
+  } else if (G.fired && !G.anim && !G.rockets.length && !G.res) {
+    G.res = { ok: G.t.hit }; if (G.t.hit) G.right++; render();
+  }
+}
+function gText(g, t, x, y, c, s) { g.font = `${s || 14}px "Do Hyeon","Noto Sans KR",sans-serif`; g.fillStyle = c; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, x, y); }
+function gDraw() {
+  const cv = document.getElementById('gCanvas'); if (!cv) return;
+  const g = cv.getContext('2d'), pad = gPad();
+  g.fillStyle = '#050914'; g.fillRect(0, 0, G_W, G_W);
+  g.fillStyle = '#ffffffa0'; G_STARS.forEach(([x, y, s]) => g.fillRect(x, y, s, s));
+  const sg = g.createRadialGradient(G_W + 40, G_C, 10, G_W + 40, G_C, 230); sg.addColorStop(0, '#ffd76ad0'); sg.addColorStop(1, '#ffd76a00');
+  g.fillStyle = sg; g.fillRect(0, 0, G_W, G_W);
+  // 위성 궤도와 24칸 눈금 (한 칸 = 15° = 1시간)
+  g.strokeStyle = '#7cc4ff44'; g.setLineDash([4, 6]); g.beginPath(); g.arc(G_C, G_C, G_RO, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]);
+  for (let i = 0; i < 24; i++) {
+    const [x1, y1] = gXY(i * 15, G_RO - 7), [x2, y2] = gXY(i * 15, G_RO + 7);
+    g.strokeStyle = i % 6 ? '#7cc4ff55' : '#7cc4ffbb'; g.lineWidth = i % 6 ? 1 : 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  }
+  [[0, '낮 12시', '#ffd76a'], [90, '오후 6시', '#a9b4d8'], [180, '밤 12시', '#a9b4d8'], [270, '오전 6시', '#a9b4d8']].forEach(([a, t, c]) => gText(g, t, ...gXY(a, G_RO + 31), c, 15));
+  gText(g, '햇빛 ←', G_W - 40, 28, '#ffd76a', 16);
+  // 3단계: 우리나라와 위성 사이 각도
+  if (!G.sats && !G.fired) {
+    const q = G3[G.round], ccw = q.k < 12, a2 = pad + (ccw ? q.k * 15 : -(24 - q.k) * 15);
+    g.setLineDash([3, 5]); g.strokeStyle = '#ffcf5a88'; g.lineWidth = 1.5;
+    [pad, a2].forEach(a => { const [x, y] = gXY(a, G_RO); g.beginPath(); g.moveTo(G_C, G_C); g.lineTo(x, y); g.stroke(); });
+    g.setLineDash([]); g.strokeStyle = '#ffcf5a'; g.lineWidth = 3; g.beginPath();
+    g.arc(G_C, G_C, 175, -pad * D2R, -a2 * D2R, ccw); g.stroke();
+    gText(g, `${ccw ? q.k * 15 : (24 - q.k) * 15}°`, ...gXY((pad + a2) / 2, 155), '#ffcf5a', 22);
+  }
+  // 지구 (가장자리 바깥은 자르고, 왼쪽 절반은 밤)
+  g.save(); g.beginPath(); g.arc(G_C, G_C, G_RE, 0, 2 * Math.PI); g.clip();
+  g.fillStyle = '#2f6fd0'; g.fillRect(0, 0, G_W, G_W);
+  g.fillStyle = '#4caf6a'; G_LAND.forEach(([off, rf, s]) => { const [x, y] = gXY(pad + off, G_RE * rf); g.beginPath(); g.ellipse(x, y, s, s * 0.7, -(pad + off) * D2R, 0, 2 * Math.PI); g.fill(); });
+  g.fillStyle = '#000a1ed0'; g.fillRect(0, 0, G_C, G_W);
+  g.restore();
+  g.strokeStyle = '#9cc8ff'; g.lineWidth = 2; g.beginPath(); g.arc(G_C, G_C, G_RE, 0, 2 * Math.PI); g.stroke();
+  gText(g, '낮', G_C + G_RE + 16, G_C, '#ffd76a', 16); gText(g, '밤', G_C - G_RE - 16, G_C, '#a9b4d8', 16);
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(G_C, G_C, 3, 0, 2 * Math.PI); g.fill(); gText(g, '북극', G_C, G_C + 14, '#ffffffcc', 12);
+  // 자전 방향 화살표
+  const ra = G_RE + 18; g.strokeStyle = '#ffcf5a'; g.lineWidth = 3; g.beginPath(); g.arc(G_C, G_C, ra, -120 * D2R, -160 * D2R, true); g.stroke();
+  const [tx, ty] = gXY(166, ra), [b1x, b1y] = gXY(157, ra + 7), [b2x, b2y] = gXY(157, ra - 7);
+  g.fillStyle = '#ffcf5a'; g.beginPath(); g.moveTo(tx, ty); g.lineTo(b1x, b1y); g.lineTo(b2x, b2y); g.fill();
+  const [lx, ly] = gXY(140, ra + 30); gText(g, '자전 방향', lx - 12, ly - 10, '#ffcf5a', 15); gText(g, '(서 → 동)', lx - 12, ly + 8, '#ffcf5a', 13);
+  // 우리나라 발사대
+  const [px, py] = gXY(pad, G_PAD);
+  g.fillStyle = '#ff4d5e'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(px, py, 7, 0, 2 * Math.PI); g.fill(); g.stroke();
+  gText(g, '우리나라', ...gXY(pad, G_PAD - 26), '#fff', 13);
+  // 위성
+  gTargets().forEach(s => { const [x, y] = gXY(s.a, G_RO); if (s.hit) gText(g, '✔', x, y, '#5fe0a0', 22); else gText(g, '🛰️', x, y, '#fff', 30); });
+  // 로켓
+  G.rockets.forEach(r => {
+    const [x0, y0] = gXY(r.a, r.r0), [x, y] = gXY(r.a, r.r);
+    g.strokeStyle = '#ff9f5a88'; g.lineWidth = 3; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x, y); g.stroke();
+    g.save(); g.translate(x, y); g.rotate(-r.a * D2R); g.fillStyle = '#ff9f5a'; g.beginPath(); g.moveTo(12, 0); g.lineTo(-6, -6); g.lineTo(-6, 6); g.fill(); g.restore();
+  });
+  G.pops.forEach(p => { g.globalAlpha = 1 - p.t / 1.2; gText(g, '✨', p.x, p.y - p.t * 30, '#fff', 30 + p.t * 30); g.globalAlpha = 1; });
+  // 위쪽 정보
+  const hud = document.getElementById('gHud');
+  if (hud) {
+    let h = `<span class="pill">🕘 우리나라 <b>${gClock(G.hour)}</b> ${gNight(G.hour) ? '🌙 밤' : '☀️ 낮'}</span>`;
+    h += G.sats ? `<span class="pill">🚀 남은 로켓 <b>${G.shots}</b></span><span class="pill">🛰️ 맞힌 위성 <b>${G.sats.filter(s => s.hit).length}/${G.sats.length}</b></span>`
+      : `<span class="pill">문제 <b>${G.round + 1}/${G3.length}</b></span><span class="pill">명중 <b>${G.right}</b></span>`;
+    if (hud.dataset.h !== h) { hud.innerHTML = h; hud.dataset.h = h; }
+  }
+  const msg = document.getElementById('gMsg'); if (msg && msg.textContent !== G.msg) msg.textContent = G.msg;
+}
+function gLoop(ts) {
+  if (!G || state.view !== 'game') { if (G) G.raf = 0; return; }
+  const dt = G.last ? Math.min(0.05, (ts - G.last) / 1000) : 0; G.last = ts;
+  gStep(dt); gDraw();
+  G.raf = requestAnimationFrame(gLoop);
+}
+function gGo(lv) { if (G) cancelAnimationFrame(G.raf); gNew(lv); render(); G.raf = requestAnimationFrame(gLoop); }
+function viewGame() {
+  const cl = state.game.cleared, head = `<div class="top"><button class="btn ghost small" data-act="enter" data-v="map">← 임무 목록</button><span class="title" style="font-size:24px">🚀 보너스: 자전 지구 발사대</span><span class="grow"></span><span class="pill">깬 단계 <b>${cl}/3</b></span></div>`;
+  if (!G) {
+    const open = Math.min(cl, 2), lv = gLevel();
+    return head + `<section class="panel" style="max-width:720px;margin:0 auto"><p>북극 위에서 내려다본 지구예요. 지구가 <b>시계 반대 방향(서 → 동)</b>으로 돌면 우리나라 발사대도 함께 돌아요. 우리나라가 위성 바로 아래에 왔을 때 로켓을 쏴서 위성을 맞혀요!</p>
+<h3 style="margin-top:12px">단계 고르기</h3>
+<div class="lvls">${G_LEVELS.map((L, i) => `<button class="lvl${on(i === lv)}" data-act="glv" data-v="${i}"${i > open ? ' disabled' : ''}><b>${i > open ? '🔒 ' : i < cl ? '✅ ' : ''}${L.name}</b><span>${i > open ? '앞 단계를 깨면 열려요.' : L.desc}</span></button>`).join('')}</div>
+<div class="row"><button class="btn" data-act="gstart">🚀 시작</button></div>
+<p class="note">전적: ${state.game.plays}판 · 깬 단계 ${cl}/3</p></section>`;
+  }
+  const L = G_LEVELS[G.lv], back = '<div class="row" style="margin-top:12px"><button class="btn ghost small" data-act="gagain">🔁 다시 하기</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button></div>';
+  const tip = '<div class="fb ex" style="margin-top:10px">💡 북극 위에서 보면 지구는 <b>시계 반대 방향(서 → 동)</b>으로 돌아요. 바깥 눈금 한 칸이 1시간(15°)이고, 바깥 글씨는 우리나라가 그쪽을 향할 때의 시각이에요.</div>';
+  let side;
+  if (G.sats) side = `<h3>${L.name}</h3><p>${L.desc}</p><button class="btn" data-act="gshoot" style="width:100%;font-size:22px;margin-top:8px">🚀 발사!</button><p class="note">화면을 눌러도 발사돼요. (키보드: 스페이스바)</p>${tip}${back}`;
+  else {
+    const q = G3[G.round], r = G.res;
+    side = `<h3>${L.name} · 문제 ${G.round + 1}/${G3.length}</h3><p>지금 우리나라는 <b>${gClock(q.h)}</b>예요. 위성 🛰️은 우리나라에서 <b>${gDir(q)}</b> 떨어져 있어요.</p><p>우리나라가 위성 바로 아래에 오려면 <b>몇 시간</b> 기다려야 할까요?</p>
+<div class="row gpick">${[-5, -1].map(d => `<button class="chip big" data-act="gpick" data-v="${d}"${G.fired ? ' disabled' : ''}>${d}</button>`).join('')}<b>${G.pick}시간</b>${[1, 5].map(d => `<button class="chip big" data-act="gpick" data-v="${d}"${G.fired ? ' disabled' : ''}>+${d}</button>`).join('')}</div>
+<button class="btn" data-act="gfire" style="width:100%"${G.fired ? ' disabled' : ''}>⏩ ${G.pick}시간 기다렸다가 발사!</button>
+${r ? `<div class="fb ${r.ok ? 'ok' : 'bad'}" style="margin-top:10px">${r.ok ? '🎯 명중!' : `💨 빗나갔어요. 정답은 <b>${q.k}시간</b>이에요.`}</div><div class="fb ex">💡 ${gWhy(q)}. 발사 시각은 ${gClock(q.h + q.k)}이에요.</div><div class="row" style="margin-top:8px"><button class="btn small" data-act="gnext">${G.round < G3.length - 1 ? '다음 문제 →' : '결과 보기 →'}</button></div>` : ''}${tip}${back}`;
+  }
+  const over = G.over ? `<div class="gover">${G.over.win
+    ? `<h2>🎉 ${L.name} 성공!</h2><p>${G.lv === 0 ? '지구가 서 → 동으로 돌면서 우리나라가 위성 아래를 차례로 지나갔어요.' : G.lv === 1 ? '우리나라는 오후 6시쯤 밤으로 들어가고 오전 6시쯤 낮으로 나와요. 낮과 밤은 지구의 자전 때문에 생겨요.' : `${G.right}/${G3.length} 명중! 지구는 1시간에 15°씩, 시계 반대 방향으로 돌아요.`}</p>
+<div class="row">${G.lv < 2 ? '<button class="btn" data-act="gup">다음 단계 →</button>' : '<p>🏆 3단계까지 모두 깼어요! 자전 박사 인정!</p>'}<button class="btn ghost small" data-act="gagain">🔁 다시 하기</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button></div>`
+    : `<h2>😢 아쉬워요!</h2><p>${G.sats ? '로켓을 다 썼어요. 우리나라가 위성 바로 아래에 오는 순간을 노려 보세요.' : `${G.right}/${G3.length} 명중. 4문제 이상 맞히면 성공이에요.`}</p><div class="row"><button class="btn" data-act="gagain">🔁 다시 도전</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button></div>`}</div>` : '';
+  return head + `<div class="lesson"><div><div class="ghud" id="gHud"></div><div class="gwrap"><canvas id="gCanvas" width="${G_W}" height="${G_W}" data-act="gshoot" aria-label="자전 지구 발사대 게임 화면"></canvas>${over}</div><p class="gmsg" id="gMsg"></p></div><aside class="panel">${side}</aside></div>`;
+}
+
 /* ───────── 그리기 ───────── */
 const app = document.getElementById('app');
-const VIEWS = { intro: viewIntro, class: viewClass, map: viewMap, m1: viewM1, m2: viewM2, m3: viewM3, m4: viewM4, cert: viewCert, teacher: viewTeacher };
+const VIEWS = { intro: viewIntro, class: viewClass, map: viewMap, m1: viewM1, m2: viewM2, m3: viewM3, m4: viewM4, cert: viewCert, teacher: viewTeacher, game: viewGame };
 function render() {
   app.innerHTML = (VIEWS[state.view] || viewIntro)();
   const slot = app.querySelector('.stage-slot'); if (slot) slot.replaceWith(Stage.el);
@@ -1142,9 +1331,11 @@ function m3Setup() {
   if (solved) Stage.replay(st.k === 'sun' ? 12 : 4, st.k === 'sun' ? 2 : 1.2);
 }
 function enter(v) {
-  if (['map', 'm1', 'm2', 'm3', 'm4', 'cert'].includes(v) && !state.num) v = 'intro';
+  if (['map', 'm1', 'm2', 'm3', 'm4', 'cert', 'game'].includes(v) && !state.num) v = 'intro';
   const i = MISSIONS.findIndex(m => m.v === v);
   if (i > 0 && !unlocked(i)) v = 'map';
+  if (v === 'game' && !gOpen()) v = 'map';
+  if (v === 'game') { if (G) cancelAnimationFrame(G.raf); G = null; }
   state.view = v; ui.fb = {}; ui.submitMsg = '';
   if (v === 'intro') { Stage.set({ view: 'sphere', frame: 'sky', playing: true, speed: 1, arrows: true }); Stage.preset(); }
   if (v === 'class') tabSetup();
@@ -1217,6 +1408,18 @@ app.addEventListener('click', async e => {
   else if (a === 'tload') teacherLoad();
   else if (a === 'tcls') { ui.teacher.cls = t.dataset.c; render(); }
   else if (a === 'submit') submit();
+  else if (a === 'glv') { ui.gLv = +v; render(); }
+  else if (a === 'gstart') gGo(gLevel());
+  else if (a === 'gshoot') gShoot();
+  else if (a === 'gpick') { if (!G.fired) { G.pick = clamp(G.pick + +v, 1, 23); render(); } }
+  else if (a === 'gfire') { if (!G.fired) { G.fired = true; G.anim = G.pick; render(); } }
+  else if (a === 'gnext') { if (G.round < G3.length - 1) { G.round++; gRound(); render(); } else gEnd(G.right >= 4); }
+  else if (a === 'gagain') gGo(G.lv);
+  else if (a === 'gup') { ui.gLv = G.lv + 1; gGo(G.lv + 1); }
+  else if (a === 'gmenu') { cancelAnimationFrame(G.raf); G = null; render(); }
+});
+document.addEventListener('keydown', e => {
+  if (state.view === 'game' && G && G.sats && e.code === 'Space') { e.preventDefault(); gShoot(); }
 });
 async function startMission(btn) {
   const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
@@ -1251,7 +1454,7 @@ async function hello() {
   ui.server = !!(out && out.lessons);
   return ui.server;
 }
-const COLS = ['임무 1 자전', '임무 2 천구', '임무 3 하늘 관측', '임무 4 확인 퀴즈', '자전 문제 (한 번에)', '천구 문제 (한 번에)', '하늘 관측 (한 번에)', '확인 퀴즈 (한 번에)', '틀린 예측'];
+const COLS = ['임무 1 자전', '임무 2 천구', '임무 3 하늘 관측', '임무 4 확인 퀴즈', '자전 문제 (한 번에)', '천구 문제 (한 번에)', '하늘 관측 (한 번에)', '확인 퀴즈 (한 번에)', '틀린 예측', '보너스 발사대'];
 function progressVals() {
   const stat = (done, a, b) => done ? '완료' : a ? `진행 ${a}/${b}` : '-';
   const m3ok = M3.filter(s => m3StepOk(s.k)).length;
@@ -1260,7 +1463,7 @@ function progressVals() {
   return [
     stat(MISSIONS[0].done(), okCount(M1Q, state.m1.q), M1Q.length), stat(MISSIONS[1].done(), okCount(M2Q, state.m2.q), M2Q.length),
     stat(MISSIONS[2].done(), m3ok, M3.length), stat(MISSIONS[3].done(), okCount(QUIZ, state.m4.q), QUIZ.length),
-    `${firstOk(M1Q, state.m1.q)}/${M1Q.length}`, `${firstOk(M2Q, state.m2.q)}/${M2Q.length}`, `${pred}/${M3.length}`, `${firstOk(QUIZ, state.m4.q)}/${QUIZ.length}`, wrong
+    `${firstOk(M1Q, state.m1.q)}/${M1Q.length}`, `${firstOk(M2Q, state.m2.q)}/${M2Q.length}`, `${pred}/${M3.length}`, `${firstOk(QUIZ, state.m4.q)}/${QUIZ.length}`, wrong, `${state.game.cleared}/3단계`
   ];
 }
 async function sync(force) {
