@@ -117,6 +117,12 @@ button.blank:not(.show){color:#ffcf5aa8;letter-spacing:.12em}
 .concept.big .note{font-size:clamp(18px,1.6vw,24px)}
 .concept.big .blank{min-width:1.6em;padding:0 .3em}
 .concept.big ol{font-size:clamp(28px,3vw,46px);padding-left:1.6em}
+.wsp{display:inline-block;background:#3dff8f;color:#03230f;font-weight:900;border-radius:999px;padding:4px 16px;font-size:clamp(17px,1.5vw,22px);box-shadow:0 0 16px #3dff8f88;white-space:nowrap;margin:0 8px}
+.wsp.none{background:#c4b0ff;color:#1a0b45;box-shadow:0 0 16px #c4b0ff88}
+.concept.big .wsp{font-size:clamp(24px,2.3vw,34px);padding:6px 22px}
+.concept .ex{color:#c4b0ff}
+.concept .wsk{color:#fff}
+.concept.big .leg{font-size:clamp(20px,1.8vw,28px)}
 .ask{background:#1c2a5c;border-left:4px solid var(--accent);border-radius:8px;padding:10px 14px;margin-top:12px;font-size:15px}
 .ask b{color:var(--accent)}
 
@@ -892,18 +898,22 @@ ${panel(800, 0, [60, 30, 0, -30, -60], '적도 (위도 0°)', '북극성이 지�
 
 /* ───────── 수업 모드 내용 ─────────
    [ ] 안의 말은 빈칸이에요. 눌러서 하나씩 보여 줄 수 있어요. (학습지 8~9쪽) */
+/* 학습지에 없는 내용(수업 PPT·교과서에서 더한 것)은 X()로 감싸 보라색으로 보여요. pg = 학습지 쪽 안내 */
+const X = s => '<span class="ex">' + s + '</span>';
+const wsp = T => T.pg ? `<span class="wsp">📒 학습지 ${T.pg}</span>` : '<span class="wsp none">📒 학습지에 없는 더 알아보기</span>';
+const WSLEG = '<p class="note leg">빈칸을 누르면 하나씩 답이 보여요. · <b class="wsk">흰 글씨</b> = 학습지 내용 · <span class="ex">보라 글씨</span> = 학습지에 없는 더 알아보기</p>';
 const TABS = [
-  { name: '① 지구의 자전', title: '🌍 지구의 자전', setup: { view: 'earth', earthCam: 'side' },
-    lines: ['지구가 [자전축]을 중심으로 [하루]에 한 바퀴씩 스스로 도는 운동', '자전 방향: [서] → [동]<br>북극 위에서 보면 [시계 반대] 방향', '자전 속도: 1시간에 [15]° (360° ÷ 24시간)', '자전축은 약 [23.5]° 기울어져 있어요.', '자전으로 나타나는 현상: [낮과 밤]의 반복, 천체의 [일주 운동]'],
+  { name: '① 지구의 자전', title: '🌍 지구의 자전', pg: '8쪽 1-(1) 지구의 자전', setup: { view: 'earth', earthCam: 'side' },
+    lines: ['지구가 [자전축]을 중심으로 [하루]에 한 바퀴씩 서쪽에서 동쪽으로 도는 운동', '자전 방향: [서] → [동]' + X('<br>북극 위에서 보면 [시계 반대] 방향'), '자전 속도: 1시간에 [15]°씩 회전 ' + X('(360° ÷ 24시간)'), X('자전축은 약 [23.5]° 기울어져 있어요.'), '자전으로 나타나는 현상: [낮과 밤]의 반복, 천체의 [일주 운동]'],
     ask: '<b>먼저 예측!</b> ⬇️ 북극 위에서 보기를 누르기 전에, 지구가 어느 방향으로 돌지 손가락으로 그려 보세요.' },
-  { name: '② 천구와 일주 운동', title: '✨ 천구와 천체의 일주 운동', setup: { view: 'sphere', frame: 'earth' },
-    lines: ['[천구]: 하늘에 별들이 붙어 있는 것처럼 보이는, 무한히 넓은 가상의 구', '일주 운동: 지구의 자전으로 하루 동안 나타나는 천체의 [겉보기] 운동', '방향: [동] → [서] (지구의 자전 방향과 [반대])', '속도: 1시간에 [15]° (지구의 자전 속도와 [같음])', '천체들은 [북극성]을 중심으로 원을 그리며 도는 것처럼 보여요. (자전축을 늘인 곳 = 천구 북극)'],
+  { name: '② 천구와 일주 운동', title: '✨ 천구와 천체의 일주 운동', pg: '8쪽 1-(2) 천체의 일주 운동', setup: { view: 'sphere', frame: 'earth' },
+    lines: ['[천구]: 하늘에 별들이 붙어 있는 것처럼 보이는, 무한히 넓은 가상의 구', '일주 운동: 지구의 자전으로 하루 동안 나타나는 천체의 [겉보기] 운동', '방향: [동] → [서] (지구의 자전 방향과 [반대])', '속도: 1시간에 [15]° (지구의 자전 속도와 [같음])', '천체들은 [북극성]을 중심으로 원을 그리며 도는 것처럼 보여요. ' + X('(자전축을 늘인 곳 = 천구 북극)')],
     ask: '<b>기차 비유</b> 기차를 타고 가면 창밖 나무가 뒤로 가는 것처럼 보이죠? 🌍 실제와 👀 겉보기를 번갈아 눌러 비교해 보세요.<br><b>다음으로</b> 🔍 우리나라로 확대를 누르면, 이 천구가 우리나라 관측자가 보는 하늘로 어떻게 바뀌는지 볼 수 있어요.' },
-  { name: '③ 방향별 별의 움직임', title: '🧭 우리나라에서 본 별의 일주 운동', setup: { view: 'sky', cam: 'look', az: 90, target: 'star', lat: 37.5, trails: true, arrows: true, polar: false, below: false },
-    lines: ['<b>동쪽 하늘</b>: [왼쪽 아래]에서 [오른쪽 위]로 비스듬히 떠올라요.', '<b>남쪽 하늘</b>: [동쪽]에서 [서쪽]으로 지평선과 나란히 이동해요. (화면에서는 왼쪽 → 오른쪽)', '<b>서쪽 하늘</b>: [왼쪽 위]에서 [오른쪽 아래]로 비스듬히 져요.', '<b>북쪽 하늘</b>: [북극성]을 중심으로 [시계 반대] 방향으로 돌아요.'],
+  { name: '③ 방향별 별의 움직임', title: '🧭 우리나라에서 본 별의 일주 운동', pg: '9쪽 1-(3) 우리나라에서 본 별의 일주 운동', setup: { view: 'sky', cam: 'look', az: 90, target: 'star', lat: 37.5, trails: true, arrows: true, polar: false, below: false },
+    lines: ['<b>동쪽 하늘</b>: [왼쪽 아래]에서 [오른쪽 위]로 비스듬히 떠올라요.', '<b>남쪽 하늘</b>: [동쪽]에서 [서쪽]으로 이동해요. ' + X('(지평선과 나란히, 화면에서는 왼쪽 → 오른쪽)'), '<b>서쪽 하늘</b>: [왼쪽 위]에서 [오른쪽 아래]로 비스듬히 져요.', '<b>북쪽 하늘</b>: [북극성]을 중심으로 [시계 반대] 방향으로 돌아요.'],
     ask: '<b>방향 감각</b> 남쪽을 보고 서면 왼쪽은 어느 방향일까요? 동쪽을 보고 서면? 🔭 밖에서 보기로 바꿔 관측자가 어느 쪽을 보는지 확인해 보세요.' },
-  { name: '④ 태양과 달', title: '☀️ 태양과 달의 일주 운동', setup: { view: 'sky', cam: 'out', target: 'sun', lat: 37.5, trails: true, arrows: true, polar: false, below: false },
-    lines: ['태양은 [동]쪽에서 떠서 [남]쪽 하늘을 지나 [서]쪽으로 져요.', '달도 별처럼 [동] → [서]로 일주 운동해요.', '태양이 일주 운동으로 다시 같은 자리에 돌아오는 데 걸리는 시간이 [하루](1일)예요.', '태양·달·별 모두 지구의 [자전] 때문에 나타나는 겉보기 운동이에요.', '<b>위도에 따라 달라요</b> 북극성의 고도 = 그 지방의 [위도] → 북극 90°(머리 위), 우리나라 약 37.5°(📐 버튼으로 보기), 적도 0°(지평선)' + FIGLAT],
+  { name: '④ 태양과 달', title: '☀️ 태양과 달의 일주 운동', pg: '8쪽 1-(1)-③ 자전으로 나타나는 현상', setup: { view: 'sky', cam: 'out', target: 'sun', lat: 37.5, trails: true, arrows: true, polar: false, below: false },
+    lines: ['태양은 [동]쪽에서 떠서 ' + X('[남]쪽 하늘을 지나 ') + '[서]쪽으로 지는 것처럼 보여요. → 낮과 밤이 생겨요.', '달도 [동]쪽에서 떠서 [서]쪽으로 지는 것처럼 보여요.', X('태양이 일주 운동으로 다시 같은 자리에 돌아오는 데 걸리는 시간이 [하루](1일)예요.'), '태양·달·별 모두 지구의 [자전] 때문에 나타나는 겉보기 운동이에요.', X('<b>위도에 따라 달라요</b> 북극성의 고도 = 그 지방의 [위도] → 북극 90°(머리 위), 우리나라 약 37.5°(📐 버튼으로 보기), 적도 0°(지평선)' + FIGLAT)],
     ask: '<b>예측해요</b> 해가 뜰 때 어느 쪽을 보고 서야 할까요? 낮 12시 무렵 태양은 어느 쪽 하늘에 있을까요?' }
 ];
 
@@ -1167,11 +1177,11 @@ ${CONFIG.SUBMIT_URL ? '<div style="text-align:right"><button class="btn ghost sm
 }
 function viewClass() {
   const T = TABS[ui.tab];
-  return `<div class="top"><span class="title" style="font-size:26px">👩‍🏫 수업 모드</span><div class="tabs">${TABS.map((t, i) => `<button class="tab${on(i === ui.tab)}" data-act="tab" data-i="${i}">${t.name}</button>`).join('')}</div><span class="grow"></span><button class="btn ghost small" data-act="enter" data-v="intro">← 처음 화면</button></div>
+  return `<div class="top"><span class="title" style="font-size:26px">👩‍🏫 수업 모드</span><div class="tabs">${TABS.map((t, i) => `<button class="tab${on(i === ui.tab)}" data-act="tab" data-i="${i}">${t.name}</button>`).join('')}</div>${wsp(T)}<span class="grow"></span><button class="btn ghost small" data-act="enter" data-v="intro">← 처음 화면</button></div>
 <div class="cl-stage"><div class="stage-slot"></div><div class="cl-side">${ctrls()}</div></div>
-<section class="panel concept big"><div class="row"><h3 style="flex:1">${T.title}</h3><button class="btn ghost small" data-act="revall">${T.lines.every((l, i) => fill(l, ui.tab + '-' + i).indexOf('blank"') < 0) ? '빈칸 가리기' : '빈칸 모두 보기'}</button></div>
+<section class="panel concept big"><div class="row"><h3 style="flex:1">${T.title}</h3>${wsp(T)}<button class="btn ghost small" data-act="revall">${T.lines.every((l, i) => fill(l, ui.tab + '-' + i).indexOf('blank"') < 0) ? '빈칸 가리기' : '빈칸 모두 보기'}</button></div>
 <ol>${T.lines.map((l, i) => `<li>${fill(l, ui.tab + '-' + i)}</li>`).join('')}</ol>
-<div class="ask">💬 ${T.ask}</div><p class="note">빈칸을 누르면 하나씩 답이 보여요. (학습지 8~9쪽)</p></section>`;
+<div class="ask">💬 ${T.ask}</div>${WSLEG}</section>`;
 }
 function viewMap() {
   const n = MISSIONS.filter(m => m.done()).length;
