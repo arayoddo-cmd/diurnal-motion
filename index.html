@@ -594,7 +594,7 @@ const Stage = (() => {
     ctx.closePath(); ctx.fill();
   }
   // 테두리가 있는 큰 화살촉 (방향을 한눈에 보여 주는 용도)
-  function bigHead(q, dx, dy, s) {
+  function bigHead(q, dx, dy, s, col) {
     const L = Math.hypot(dx, dy); if (L < 0.01) return;
     const ux = dx / L, uy = dy / L;
     ctx.beginPath();
@@ -603,7 +603,7 @@ const Stage = (() => {
     ctx.lineTo(q[0] - ux * s * 0.15, q[1] - uy * s * 0.15);
     ctx.lineTo(q[0] - ux * s * 0.5 + uy * s * 0.62, q[1] - uy * s * 0.5 - ux * s * 0.62);
     ctx.closePath();
-    ctx.fillStyle = '#ffd34d'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(40,25,0,.85)'; ctx.stroke();
+    ctx.fillStyle = col || '#ffd34d'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(40,25,0,.85)'; ctx.stroke();
   }
   const starR = m => clamp(3.1 - m * 0.45, 0.7, 3.2);
   const DIRS = [['북', 0], ['북동', 45], ['동', 90], ['남동', 135], ['남', 180], ['남서', 225], ['서', 270], ['북서', 315]];
@@ -612,18 +612,21 @@ const Stage = (() => {
   /* 하늘 그리기 (천구 보기와 관측자 보기에서 함께 씀) */
   function drawSky(th) {
     const look = isLook(), k = look ? 1.35 : 1;
+    // 수업 탭 ③ 밖에서 보기: 관측자가 바라보는 쪽 하늘(방위 ±50°)의 별 화살표·자취는 하늘색으로 진하게, 나머지는 흐리게
+    const fd = faceDir(), HC = '#3ff0ff';
+    const inReg = p => { if (fd == null) return true; const az = (Math.atan2(p[0], -p[2]) / D2R + 360) % 360; return Math.abs(((az - fd) % 360 + 540) % 360 - 180) <= 50; };
     STARS.forEach(s => { s.p = eq(s.h0 + th, s.dec); s.v = vis(s.p); });
     const showStars = !(tilt && S.target === 'sun');
     if (S.trails && tilt) {
       const a0 = Math.max(S.t0, S.t - 24) * 15 * D2R, span = th - a0;
       if (span > 0.001) {
         const n = Math.max(2, Math.ceil(span / (2 * D2R)));
-        const trail = (h0, dec, color, width) => {
+        const trail = (h0, dec, color, width, f) => {
           ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
           h0.forEach((h, j) => {
             let pen = false;
             for (let i = 0; i <= n; i++) {
-              const p = eq(h + a0 + span * i / n, dec[j]), q = p[1] >= 0 || (S.below && !look) ? P(p[0], p[1], p[2]) : null;
+              const p = eq(h + a0 + span * i / n, dec[j]), q = (p[1] >= 0 || (S.below && !look)) && (!f || f(p)) ? P(p[0], p[1], p[2]) : null;
               if (!q) { pen = false; continue; }
               if (pen) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
               pen = true;
@@ -633,7 +636,8 @@ const Stage = (() => {
         };
         if (showStars) {
           const list = STARS.filter(s => s.mag <= 4.4 || s.con);
-          trail(list.map(s => s.h0), list.map(s => s.dec), 'rgba(220,232,255,.55)', look ? 2 : 1.5);
+          if (fd == null) trail(list.map(s => s.h0), list.map(s => s.dec), 'rgba(220,232,255,.55)', look ? 2 : 1.5);
+          else { trail(list.map(s => s.h0), list.map(s => s.dec), 'rgba(220,232,255,.18)', 1.2, p => !inReg(p)); trail(list.map(s => s.h0), list.map(s => s.dec), 'rgba(63,240,255,.85)', 2.4, inReg); }
         }
         if (S.target === 'sun') trail([SUN_H0], [0], 'rgba(255,200,60,.9)', look ? 5 : 4);
         if (S.target === 'moon') trail([SUN_H0], [0], 'rgba(235,235,225,.8)', look ? 4 : 3);
@@ -649,21 +653,27 @@ const Stage = (() => {
       if (!S.arrows) tag('노란 화살표: 별이 움직이는 방향 (동 → 남 → 서) · 흐린 선: 별이 지나는 길', [W / 2, H - 24], { bg: '#ffd34d', fg: '#2a1c00' });
       decs.forEach(dd => {
         const dec = dd * D2R, gap = Math.abs(dd) >= 70 ? 90 : 40;
-        ctx.strokeStyle = 'rgba(255,211,77,.3)'; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
-        let pen = false;
-        for (let i = 0; i <= 144; i++) {
-          const p = eq(i / 144 * Math.PI * 2, dec), q = p[1] >= 0 ? P(p[0], p[1], p[2]) : null;
-          if (!q) { pen = false; continue; }
-          if (pen) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
-          pen = true;
-        }
-        ctx.stroke();
+        const road = (col, w, f) => {
+          ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+          let pen = false;
+          for (let i = 0; i <= 144; i++) {
+            const p = eq(i / 144 * Math.PI * 2, dec), q = p[1] >= 0 && (!f || f(p)) ? P(p[0], p[1], p[2]) : null;
+            if (!q) { pen = false; continue; }
+            if (pen) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]);
+            pen = true;
+          }
+          ctx.stroke();
+        };
+        if (fd == null) road('rgba(255,211,77,.3)', lw);
+        else { road('rgba(255,211,77,.12)', lw, p => !inReg(p)); road('rgba(63,240,255,.55)', lw + 2, inReg); }
         if (!S.arrows && dd !== 0) return;
         for (let k = 0; k < 360 / gap; k++) {
           const h = base + th + k * gap * D2R, p = eq(h, dec), p2 = eq(h + 2 * D2R, dec);
           if (p[1] < 0.25 || p2[1] < 0) continue;
           const q = P(p[0], p[1], p[2]), q2 = P(p2[0], p2[1], p2[2]); if (!q || !q2) continue;
-          bigHead(q, q2[0] - q[0], q2[1] - q[1], hs);
+          if (fd == null) bigHead(q, q2[0] - q[0], q2[1] - q[1], hs);
+          else if (inReg(p)) bigHead(q, q2[0] - q[0], q2[1] - q[1], hs * 1.25, HC);
+          else { ctx.globalAlpha = .25; bigHead(q, q2[0] - q[0], q2[1] - q[1], hs * .8); ctx.globalAlpha = 1; }
         }
       });
     }
@@ -687,8 +697,11 @@ const Stage = (() => {
         if (s.v < 1 || !(s.mag <= 3 || s.con) || s.con === 'polaris') return;
         const q = P(...s.p); if (!q) return;
         const p2 = eq(s.h0 + th + 3 * D2R, s.dec), q2 = P(...p2); if (!q2) return;
-        head(q, q2[0] - q[0], q2[1] - q[1], look ? 9 : 7, '#ffd34d');
+        if (fd == null) head(q, q2[0] - q[0], q2[1] - q[1], look ? 9 : 7, '#ffd34d');
+        else if (inReg(s.p)) head(q, q2[0] - q[0], q2[1] - q[1], 9, HC);
+        else { ctx.globalAlpha = .25; head(q, q2[0] - q[0], q2[1] - q[1], 6, '#ffd34d'); ctx.globalAlpha = 1; }
       });
+      if (fd != null && S.arrows) tag(`🔵 하늘색 화살표 = ${dirName(fd)}쪽 하늘의 별이 움직이는 방향`, [W / 2, 30], { size: 18, bg: HC, fg: '#002a30' });
       const pol = STARS[POLARIS];
       if (pol.v) { const q = P(...pol.p); if (q) { ctx.strokeStyle = '#ffe28a'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(q[0], q[1], 8 * k, 0, Math.PI * 2); ctx.stroke(); tag(tilt ? '북극성' : '북극성 (천구 북극 근처)', q, { dy: -22, fg: '#ffe28a' }); } }
       CONSTS.forEach(c => { const s = STARS[c.idx[c.label]]; if (s.v === 1) tag(c.name, P(...s.p), { dy: 20, size: 13, bg: 'rgba(8,14,40,.55)', fg: '#bcd0ff' }); });
