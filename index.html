@@ -60,7 +60,9 @@ label{display:block;font-weight:700;margin:10px 0 4px}
 .stage .hud{position:absolute;left:10px;top:10px;right:10px;pointer-events:none;font-size:14px;font-weight:700;line-height:1.4}
 .stage .hud span{display:inline-block;background:#08102ecc;border:1px solid #ffffff26;border-radius:12px;padding:5px 12px}
 .stage .hud span:empty{display:none}
+.stage.big .hud{font-size:24px}
 .stage .face{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);pointer-events:none;background:#08102ecc;border:1px solid #ffffff26;border-radius:999px;padding:6px 18px;font-weight:700;white-space:nowrap;font-size:clamp(14px,2.4vw,19px)}
+.stage.big .face{font-size:26px}
 .stage .face:empty{display:none}
 .stage .nogl{display:flex;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;color:var(--muted)}
 
@@ -313,7 +315,7 @@ const Stage = (() => {
   // paths: 밖에서 볼 때 별이 지나는 길만 그리고 화살표는 천구의 적도에만 (임무 3 예측 전 길잡이)
   // faceAz: 밖에서 볼 때 관측자가 바라볼 방향 표시
   const SPEEDS = [0.25, 0.8, 2.5]; // 1초에 흐르는 시간
-  const watch = {}, hooks = { watch: null, change: null };
+  const watch = {}, hooks = { watch: null, change: null, big: null };
   const el = document.createElement('div'); el.className = 'stage';
   if (!window.THREE || !THREE.OrbitControls) {
     el.innerHTML = '<div class="nogl">3D 화면을 불러오지 못했어요.<br>인터넷 연결을 확인하고 새로고침해 주세요.</div>';
@@ -532,7 +534,7 @@ const Stage = (() => {
   const endDrag = () => { if (!drag) return; drag = null; hooks.change && hooks.change('look'); };
   glc.addEventListener('pointerup', endDrag); glc.addEventListener('pointercancel', endDrag);
 
-  let W = 1, H = 1, DPR = 1;
+  let W = 1, H = 1, DPR = 1, FS = 1;
   new ResizeObserver(() => {
     W = el.clientWidth; H = el.clientHeight; if (!W || !H) return;
     DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -574,10 +576,11 @@ const Stage = (() => {
   function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arc(x + w - r, y + r, r, -Math.PI / 2, 0); ctx.lineTo(x + w, y + h - r); ctx.arc(x + w - r, y + h - r, r, 0, Math.PI / 2); ctx.lineTo(x + r, y + h); ctx.arc(x + r, y + h - r, r, Math.PI / 2, Math.PI); ctx.lineTo(x, y + r); ctx.arc(x + r, y + r, r, Math.PI, Math.PI * 1.5); ctx.closePath(); }
   function tag(text, q, o) {
     if (!q) return; o = o || {};
-    const size = o.size || 15;
+    const size = (o.size || 15) * (o.fixed ? 1 : FS); // 수업 화면(TV)에서는 글자를 크게
     ctx.font = `${size}px "Do Hyeon","Noto Sans KR",sans-serif`;
     const w = ctx.measureText(text).width + 16, h = size + 10;
-    const x = q[0] - w / 2 + (o.dx || 0), y = q[1] - h / 2 + (o.dy || 0);
+    // 글자가 커져도 화면 밖으로 잘리지 않게 안쪽으로 밀어 넣어요
+    const x = clamp(q[0] - w / 2 + (o.dx || 0), 4, Math.max(4, W - w - 4)), y = clamp(q[1] - h / 2 + (o.dy || 0), 4, Math.max(4, H - h - 4));
     ctx.globalAlpha = o.alpha == null ? 1 : o.alpha;
     ctx.fillStyle = o.bg || 'rgba(8,14,40,.8)'; rr(x, y, w, h, h / 2); ctx.fill();
     ctx.fillStyle = o.fg || '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -892,6 +895,8 @@ const Stage = (() => {
     }
     renderer.render(scene, camera);
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+    FS = hooks.big && hooks.big() ? clamp(W / 1000, 1.4, 1.8) : 1;
+    el.classList.toggle('big', FS > 1);
     camera.updateMatrixWorld(); M.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     if (S.view === 'earth') drawEarth();
     else if (S.view === 'sphere') drawSphere(S.frame === 'sky' ? th : 0);
@@ -1805,6 +1810,7 @@ function enter(v) {
   if (v === 'm3') { state.m3.step = Math.min(state.m3.step, m3First()); m3Setup(); }
   save(); render(); window.scrollTo(0, 0);
 }
+Stage.hooks.big = () => state.view === 'class'; // 수업 화면은 TV로 보니까 3D 화면 글자를 크게
 Stage.hooks.watch = k => {
   const m = state.view === 'm1' || state.view === 'm2' ? state[state.view] : null;
   if (m && CHECK[state.view].some(([kk]) => kk === k) && !m.seen[k]) { m.seen[k] = true; save(); render(); }
