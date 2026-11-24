@@ -228,6 +228,14 @@ svg.fig{width:100%;max-height:250px;border-radius:10px;background:#0b1230;displa
 .ghud .pill.hot{background:#ff5d6c33;outline:1px solid #ff8f9a}
 .gopts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
 .gopts .chip{font-size:20px;padding:12px 8px}
+/* 3·4단계 밤하늘: 넓은 하늘 그림 + 오른쪽 문제 칸 */
+.gwrap.obs{max-width:900px}
+.lesson.obs{grid-template-columns:minmax(0,1.9fr) minmax(280px,1fr)}
+@media (max-width:920px){.lesson.obs{grid-template-columns:1fr}}
+.gq2{font-size:21px;line-height:1.5;margin:6px 0}
+.gopts.two{grid-template-columns:1fr 1fr}
+.gopts .chip.bad{background:#ff5d6c44;outline:2px solid #ff8f9a}
+.gopts .chip:disabled{opacity:1}
 .gord .otxt{font-size:22px;line-height:1.5;background:#ffcf5a1a;border:2px solid #ffcf5a88;border-radius:14px;padding:12px 14px;margin:6px 0 8px}
 .gord .fb{font-size:17px}
 .gstat{font-size:17px;margin:0}.gteam{font-size:16px;color:#9ff0d0;margin:8px 0 0}
@@ -1293,7 +1301,7 @@ function viewMap() {
   return `<div class="top"><span class="title" style="font-size:26px">🧑‍🚀 탐사 임무</span><span class="pill">진행 <b>${n}/4</b></span><span class="grow"></span><span class="pill">🧑‍🚀 <b>${esc(state.num)} ${esc(state.name)}</b></span><button class="btn ghost small" data-act="enter" data-v="cert">📋 결과</button><button class="btn ghost small" data-act="enter" data-v="intro">← 처음 화면</button></div>
 ${tester() ? '<div class="done" style="margin:0 0 14px"><b>🧪 선생님 시험 모드 (학번 00000) · 모든 임무와 게임 단계가 열려 있어요.</b><span class="muted">시트 보내기 시험은 📋 결과에서</span></div>' : ''}<div class="mcards">${MISSIONS.map((m, i) => { const ok = unlocked(i), d = m.done(); return `<section class="panel mcard${ok ? '' : ' lock'}"><span class="n">${d ? '<span class="st-done">✔ 완료</span>' : failed(m.v) ? '<span class="st-retry">🔁 통과 기준을 넘지 못했어요 · 다시 도전</span>' : ok ? '도전 가능' : '🔒 앞 임무를 먼저 마쳐요'}</span><h3>${m.t}</h3><p class="muted">${m.d}</p><div class="row"><button class="btn${d ? ' ghost' : ''} small" data-act="enter" data-v="${m.v}"${ok ? '' : ' disabled'}>${d ? '다시 보기' : failed(m.v) ? '다시 도전' : '시작'}</button></div></section>`; }).join('')}</div>
 ${MISSIONS.every(m => m.done()) ? '<div class="done"><b>🎉 모든 임무를 마쳤어요!</b><button class="btn small" data-act="enter" data-v="cert">결과 보기 →</button></div>' : ''}
-<section class="panel mcard${gOpen() ? '' : ' lock'}" style="margin-top:14px"><span class="n">보너스</span><h3>🚀 자전 지구 발사대</h3><p class="muted">${gOpen() ? `자전하는 지구에서 로켓을 쏴 다가오는 소행성을 막아요. 3단계 도전 (${state.game.cleared}/3 클리어)` : '임무 4(확인 퀴즈)를 마치면 열려요.'}</p><div class="row"><button class="btn small" data-act="enter" data-v="game"${gOpen() ? '' : ' disabled'}>놀기</button></div></section>`;
+<section class="panel mcard${gOpen() ? '' : ' lock'}" style="margin-top:14px"><span class="n">보너스</span><h3>🌏 자전 · 별 관측 미션</h3><p class="muted">${gOpen() ? `소행성 발사대 · 밤에만 발사 · 망원경 예측 · 별 궤적 사진 판독 (${gData().cleared}/4 클리어)` : '임무 4(확인 퀴즈)를 마치면 열려요.'}</p><div class="row"><button class="btn small" data-act="enter" data-v="game"${gOpen() ? '' : ' disabled'}>놀기</button></div></section>`;
 }
 function missionPage(i, title, side) {
   return mTop(title) + `<div class="lesson"><div><div class="stage-slot"></div>${ctrls()}</div><aside class="panel">${side}${endBox(i, MISSIONS[i].v)}</aside></div>`;
@@ -1340,7 +1348,7 @@ function viewM4() {
 }
 function scoreRows() {
   const row = (m, i) => { const [a, n] = SCORE[m](), t = state[m].tries || 0; return [MISSIONS[i].t, MISSIONS[i].done() ? `완료 · 한 번에 맞힘 ${a}/${n}${t ? ` · 재도전 ${t}번` : ''}` : failed(m) ? `재도전 필요 (${a}/${n})` : '진행 중']; };
-  return ['m1', 'm2', 'm3', 'm4'].map(row).concat([['보너스 발사대', `${state.game.cleared}/3단계 클리어`]]);
+  return ['m1', 'm2', 'm3', 'm4'].map(row).concat([['보너스 게임', `${gData().cleared}/4단계 클리어`]]);
 }
 function viewCert() {
   return `<div class="top"><button class="btn ghost small" data-act="enter" data-v="map">← 임무 목록</button><span class="title" style="font-size:26px">📋 탐사 결과</span></div>
@@ -1390,40 +1398,56 @@ async function teacherLoad(silent) {
   render();
 }
 
-/* ───────── 보너스: 자전 지구 발사대 ─────────
-   북극 위에서 본 지구가 시계 반대 방향(서 → 동)으로 돌아요. 태양은 오른쪽에 있어서
-   우리나라가 오른쪽(태양 쪽)을 향하면 낮 12시, 왼쪽을 향하면 밤 12시예요. 1시간에 15°.
-   1·2단계: 90초 타임어택 · 정확도 판정(PERFECT/GOOD) · 콤보 · 황금 혜성
-   3단계: 시계 없는 발사 (시계를 숨기고, 요격 명령 시각에 맞춰 직접 발사. 15분 이내 PERFECT, 30분 이내 GOOD)
-   무한 도전: 3단계를 깨면 열려요. 목숨 3개, 5개 맞힐 때마다 지구가 빨라져요
-   맞힌 소행성 수는 '요격 수'로 모아서 교사 화면에서 반별 합동 미션 게이지로 보여요. */
+/* ───────── 보너스: 자전 · 별 관측 미션 ─────────
+   1·2단계 자전 지구 발사대: 북극 위에서 본 지구가 시계 반대 방향(서 → 동)으로 돌아요. 태양은 오른쪽에 있어서
+     우리나라가 오른쪽(태양 쪽)을 향하면 낮 12시, 왼쪽을 향하면 밤 12시예요. 1시간에 15°.
+     우리나라가 소행성을 정면으로 마주 볼 때 발사! 2단계는 밤(오후 6시~오전 6시)에만 발사할 수 있어요.
+   3단계 망원경 예측: 우리나라(북위 37.5°)에서 본 하늘. ★별이 지나는 길(점선)과 1시간 전 자리를 보고 ○시간 뒤 자리를 눌러요.
+   4단계 별 궤적 사진 판독: 어느 쪽 하늘 · 몇 시간 동안(각도 ÷ 15°) · 별이 움직인 쪽 (학습지 형성평가 유형)
+   점수 · 우리 반 순위 · 합동 미션('성공 수')은 '일주운동 게임 현황' 탭에 모여요. */
 const G_W = 600, G_C = 300, G_RE = 105, G_RO = 235, G_END = 330, G_SPEED = 620, G_HIT = 26, G_PERF = 2.5;
 const G_PAD = G_RE * Math.cos(37.5 * D2R); // 북극 위에서 보면 우리나라(북위 37.5°)는 지구 가장자리보다 조금 안쪽
-const G_LEVELS = [
-  { name: '1단계 · 연습 발사', desc: '90초 동안 로켓 28발! 지구가 돌다가 우리나라가 소행성을 정면으로 마주 볼 때 발사해요. 소행성 10개 이상 맞히면 성공.', hph: 3, shots: 28, goal: 10, n: 3, v: 0, pt: [150, 100], time: 90 },
-  { name: '2단계 · 밤에만 발사', desc: '소행성이 천천히 움직여요. 소행성은 어두워서 낮에는 햇빛 때문에 보이지 않아요. 우리나라가 밤(오후 6시~오전 6시)일 때만 조준할 수 있어요! 90초 동안 로켓 28발, 8개 이상 맞히면 성공.', hph: 3.6, shots: 28, goal: 8, n: 3, v: 1, pt: [200, 130], time: 90 },
-  { name: '3단계 · 시계 없는 발사', desc: '관제소 시계가 꺼졌어요! 요격 명령의 시각에 맞춰 직접 발사해요. 바깥 눈금 한 칸 = 1시간 = 15°. 90초 동안 7번 이상 맞히면 성공.', hph: 2.4, goal: 7, pt: [300, 180], time: 90, clock: true },
-  { name: '🔥 무한 도전', desc: '시간 제한 없이 목숨 3개! 빗나가면 목숨이 하나 줄고, 5개 맞힐 때마다 지구가 빨라져요(점수도 커져요). 얼마나 오래 버틸까?', hph: 3, n: 3, v: 0, pt: [150, 100], endless: true }
+const O_W = 760, O_H = 520, O_LAT = 37.5, O_FOV = 100, OD = Math.PI / 180;
+const LV = [
+  { kind: 'launch', name: '1단계 · 소행성 발사대', desc: '90초 동안 로켓 28발! 지구가 돌다가 우리나라가 소행성을 정면으로 마주 볼 때 발사해요. 소행성 10개 이상 맞히면 성공.', hph: 3, shots: 28, goal: 10, n: 3, v: 0, pt: [150, 100], time: 90 },
+  { kind: 'launch', night: true, name: '2단계 · 밤에만 발사', desc: '소행성이 천천히 움직여요. 소행성은 어두워서 낮에는 햇빛 때문에 보이지 않아요. 우리나라가 밤(오후 6시~오전 6시)일 때만 조준할 수 있어요! 90초 동안 로켓 28발, 8개 이상 맞히면 성공.', hph: 3.6, shots: 28, goal: 8, n: 3, v: 1, pt: [200, 130], time: 90 },
+  { kind: 'pred', name: '3단계 · 망원경 예측', desc: '이제 우리나라에서 밤하늘을 봐요. ★별이 지나는 길(노란 점선)과 1시간 전 자리가 보여요. "○시간 뒤 ★별은 어디에?" 길 위에서 그 자리를 눌러요. 90초 동안 6번 이상 맞히면 성공.', time: 90, goal: 6 },
+  { kind: 'photo', name: '4단계 · 별 궤적 사진 판독', desc: '오래 노출해서 찍은 별 궤적 사진을 보고 어느 쪽 하늘인지, 몇 시간 동안 찍었는지, 별이 어느 쪽으로 움직였는지 맞혀요. 90초 동안 7번 이상 맞히면 성공. (틀리면 5초 줄어요)', time: 90, goal: 7 }
 ];
 const G_MARK = { 0: '밤 12시', 6: '오전 6시', 12: '낮 12시', 18: '오후 6시' };
 const gMul = c => c >= 6 ? 3 : c >= 3 ? 2 : 1; // 콤보: 3연속부터 ×2, 6연속부터 ×3
 const G_LAND = [[0, 0.79, 16], [25, 0.55, 26], [95, 0.45, 20], [160, 0.6, 30], [235, 0.5, 24], [300, 0.62, 22]];
 const G_STARS = (() => { const r = rng(11), a = []; for (let i = 0; i < 90; i++) a.push([r() * G_W, r() * G_W, r() * 1.4 + 0.4]); return a; })();
+const O_DIRS = [0, 90, 180, 270], O_NAME = { 0: '북', 90: '동', 180: '남', 270: '서' };
+const O_DESC = {
+  0: '북쪽 하늘의 별은 북극성을 중심으로 시계 반대 방향으로 돌아요.',
+  90: '동쪽 하늘의 별은 왼쪽 아래에서 오른쪽 위로 비스듬히 떠올라요.',
+  180: '남쪽 하늘의 별은 동쪽(왼쪽)에서 서쪽(오른쪽)으로 지평선과 나란히 움직여요.',
+  270: '서쪽 하늘의 별은 왼쪽 위에서 오른쪽 아래로 비스듬히 져요.'
+};
+// 하늘의 별 (늘 같은 배치): h0 = 기준 시각의 시간각(°), dec = 적위(°), m = 밝기 등급
+const O_STARS = (() => { const r = rng(37), a = []; for (let i = 0; i < 360; i++) a.push({ h0: r() * 360, dec: Math.asin(r() * 1.62 - 0.62) / OD, m: 1 + r() * r() * 4.2 }); a.push({ h0: 0, dec: 89.2, m: 1.6, pol: true }); return a; })();
 let G = null; // 게임 진행 상태 (저장하지 않아요)
 try { ui.mute = localStorage.getItem('dm-mute') === '1'; } catch (e) {}
 const gOpen = () => tester() || MISSIONS[3].done();
-const gLevel = () => { const open = tester() ? 3 : Math.min(state.game.cleared, 3); return Math.min(ui.gLv == null ? Math.min(open, 2) : ui.gLv, open); };
+// 예전 게임 기록(발사대 v1 · 관측 미션 v2)이 남아 있으면 새 4단계 기록으로 바꿔요
+function gData() { const g = state.game; if (g.v !== 3) Object.assign(g, { v: 3, cleared: 0, best: 0, last: 0, sb: [0, 0, 0, 0], hits: 0 }); return g; }
+const gLevel = () => { const open = tester() ? 3 : Math.min(gData().cleared, 3); return Math.min(ui.gLv == null ? open : ui.gLv, open); };
 const gXY = (a, r) => [G_C + r * Math.cos(a * D2R), G_C - r * Math.sin(a * D2R)];
 const gPad = () => (G.hour - 12) * 15;
 const gH24 = h => ((h % 24) + 24) % 24;
 const gNight = h => gH24(h) >= 18 || gH24(h) < 6;
 const gAng = d => ((d % 360) + 540) % 360 - 180; // 두 각도 차이 (−180° ~ 180°)
 const gRand = (a, b) => a + Math.random() * (b - a);
+const oPick = a => a[Math.floor(Math.random() * a.length)];
+const oShuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function gClock(h) {
   h = gH24(h); const H = Math.floor(h + 1e-6), m = Math.floor((h - H) * 6 + 1e-6) * 10;
   if (!m && G_MARK[H]) return G_MARK[H];
   return `${H < 12 ? '오전' : '오후'} ${H % 12 || 12}시${m ? ' ' + m + '분' : ''}`;
 }
+// 시간 길이 글자 (10분 단위): 2.17 → '2시간 10분'
+function oHM(h) { const mn = Math.round(Math.abs(h) * 6) * 10, H = Math.floor(mn / 60), M = mn % 60; return H ? `${H}시간${M ? ' ' + M + '분' : ''}` : `${M}분`; }
 
 // 효과음 (화면 위 🔊 버튼으로 끌 수 있어요)
 let gAC = null;
@@ -1439,29 +1463,38 @@ function gTone(f, d, type, v, at = 0) {
 }
 const SFX = {
   fire: () => gTone(440, 0.07, 'triangle', 0.05),
+  tap: () => gTone(520, 0.07, 'triangle', 0.05),
   good: () => { gTone(660, 0.09, 'square', 0.035); gTone(880, 0.12, 'square', 0.035, 0.07); },
   perfect: () => [660, 880, 1175, 1568].forEach((f, i) => gTone(f, 0.1, 'square', 0.035, i * 0.055)),
   gold: () => [523, 659, 784, 1047, 1319].forEach((f, i) => gTone(f, 0.14, 'triangle', 0.06, i * 0.07)),
   appear: () => { gTone(1319, 0.08, 'triangle', 0.04); gTone(1568, 0.1, 'triangle', 0.04, 0.09); },
   miss: () => gTone(150, 0.22, 'sawtooth', 0.03),
   no: () => gTone(220, 0.12, 'square', 0.025),
-  speed: () => [440, 554, 659, 880].forEach((f, i) => gTone(f, 0.08, 'sawtooth', 0.03, i * 0.05)),
   win: () => [523, 659, 784, 1047].forEach((f, i) => gTone(f, 0.2, 'triangle', 0.06, i * 0.12)),
   lose: () => [392, 330, 262].forEach((f, i) => gTone(f, 0.25, 'triangle', 0.05, i * 0.15))
 };
 
 function gNew(lv) {
-  const L = G_LEVELS[lv];
-  G = { lv, hour: 6, rockets: [], pops: [], fx: [], over: null, raf: 0, last: 0, msg: '', score: 0, combo: 0, maxCombo: 0, hits: 0, perfect: 0, t: L.time || 0, el: 0, shake: 0, ready: 1.6, cd: 0, speed: 1 };
-  if (L.clock) Object.assign(G, { hour: Math.floor(Math.random() * 24), order: null, round: 0, nextT: 0 });
-  else {
-    Object.assign(G, { shots: L.endless ? Infinity : L.shots, lives: 3, gold: null, goldT: gRand(7, 11), sats: [] });
+  const L = LV[lv];
+  G = { lv, t: L.time, score: 0, combo: 0, maxCombo: 0, hits: 0, miss: 0, perfect: 0, ready: L.kind === 'launch' ? 1.6 : 1.2, fx: [], over: null, raf: 0, last: 0, shake: 0 };
+  if (L.kind === 'launch') {
+    Object.assign(G, { hour: 6, rockets: [], pops: [], msg: '', shots: L.shots, gold: null, goldT: gRand(7, 11), sats: [], cd: 0 });
     for (let i = 0; i < L.n; i++) G.sats.push(gSat(i * 120 + 60));
-  }
+  } else Object.assign(G, { q: null, phase: 'wait', wait: 0, round: 0, lastAz: null });
 }
-function gSat(a) { const L = G_LEVELS[G.lv], mv = L.v || (L.endless && G.hits >= 10); return { a, v: mv ? (Math.random() < 0.5 ? -1 : 1) * (L.v ? gRand(4, 9) : gRand(2, 5)) : 0, hit: false, rt: 0 }; }
-// 5분 단위 시각 (3단계 채점 글)
-function gClock5(h) { h = gH24(Math.round(gH24(h) * 12) / 12); const H = Math.floor(h + 1e-6), m = Math.round((h - H) * 60); if (!m && G_MARK[H]) return G_MARK[H]; return `${H < 12 ? '오전' : '오후'} ${H % 12 || 12}시${m ? ' ' + m + '분' : ''}`; }
+// 단계 마치기 (모든 단계 공통)
+function gEnd() {
+  const g = gData(), L = LV[G.lv], win = G.hits >= L.goal, score = G.score, prev = g.best, prevLv = g.sb[G.lv] || 0;
+  g.plays++; g.last = score; g.hits += G.hits; g.sb[G.lv] = Math.max(prevLv, score); g.best = g.sb.reduce((a, b) => a + b, 0);
+  if (win && G.lv + 1 > g.cleared) g.cleared = G.lv + 1;
+  G.over = { win, score, up: g.best > prev, lvUp: score > prevLv };
+  if (win) SFX.win(); else SFX.lose();
+  save(); syncGame(); render();
+}
+function gText(g, t, x, y, c, s) { g.font = `${s || 14}px "Do Hyeon","Noto Sans KR",sans-serif`; g.fillStyle = c; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, x, y); }
+
+/* ── 1·2단계: 자전 지구 발사대 ── */
+function gSat(a) { const L = LV[G.lv]; return { a, v: L.v ? (Math.random() < 0.5 ? -1 : 1) * gRand(4, 9) : 0, hit: false, rt: 0 }; }
 // 맞힌 소행성 자리에는 잠깐 뒤 새 소행성이 다른 자리에 나타나요 (우리나라 바로 위와 다른 소행성 가까이는 피해요)
 function gRespawn(s) {
   for (let k = 0; k < 40; k++) {
@@ -1475,116 +1508,53 @@ function gRespawn(s) {
 // 황금 혜성: 잠깐(2.8초)만 나타나요. 사라지기 전에 우리나라가 그 아래에 갈 수 있을지 판단해요
 function gGold() {
   const pad = gPad(); let a;
-  if (G.lv === 1) { a = gRand(100, 260); if (Math.abs(gAng(a - pad)) < 25) a += 60; } // 2단계는 밤쪽에만
+  if (LV[G.lv].night) { a = gRand(100, 260); if (Math.abs(gAng(a - pad)) < 25) a += 60; } // 2단계는 밤쪽에만
   else a = pad + gRand(40, 150);
   G.gold = { a, v: 0, hit: false, gold: true, life: 2.8, max: 2.8 };
   G.msg = '☄️ 황금 혜성 등장! 사라지기 전에 맞힐 수 있을까?'; SFX.appear();
 }
-/* 3단계 요격 명령 (매번 달라요). 처음 두 장은 '○시에 발사', 그다음부터 세 종류가 섞여요
-   0: ○시 정각에 발사  1: 명령 받은 시각(빨간 점선)에서 ○시간 뒤  2: 밤 12시·오전 6시·낮 12시·오후 6시 글씨에서 자전 방향으로 ○° 더 */
-function gOrder() {
-  const pad = gPad(); let o = null;
-  for (let k = 0; k < 100 && !o; k++) {
-    const type = G.round < 2 ? 0 : Math.floor(Math.random() * 3);
-    let h, txt, ref = null;
-    if (type === 0) { h = Math.floor(Math.random() * 24); if (h % 6 === 0) continue; txt = `<b>${gClock(h)}</b> 정각에 발사!`; }
-    else if (type === 1) { ref = Math.round(G.hour); const d = 3 + Math.floor(Math.random() * 7); h = ref + d; txt = `명령 받은 시각은 <b>${gClock(ref)}</b>(빨간 점선)이에요. 그로부터 <b>${d}시간 뒤</b>에 발사!`; }
-    else { const b = [0, 6, 12, 18][Math.floor(Math.random() * 4)], d = 15 * (1 + Math.floor(Math.random() * 5)); h = b + d / 15; txt = `<b>${G_MARK[b]}</b> 글씨 쪽에서 자전 방향으로 <b>${d}°</b> 더 돈 곳에서 발사!`; }
-    const a = (h - 12) * 15, dist = ((a - pad) % 360 + 360) % 360;
-    if (dist < 45 || dist > 340) continue; // 너무 가까우면 다시 (생각할 시간이 있게)
-    o = { type, h: gH24(h), a, dist, gone: 0, txt, ref, res: null };
-  }
-  G.round++; G.order = o; G.msg = ''; SFX.appear();
-}
-// 3단계 채점: 발사한 시각(hr)과 명령 시각의 차이. hr == null 이면 지나쳐서 놓친 것
-function gJudge(hr) {
-  const L = G_LEVELS[2], o = G.order, [sx, sy] = gXY(o.a, G_RO);
-  let label, col, ok = false, p = 0, m = 1, txt;
-  if (hr == null) { label = '⌛ 놓쳤어요'; col = '#ff7b8a'; txt = `⌛ 지나쳤어요! ${gClock(o.h)}는 🪨 자리였어요.`; SFX.miss(); }
-  else {
-    const d = gAng((hr - 12) * 15 - o.a), min = Math.round(Math.abs(d) * 4 / 5) * 5; // 1° = 4분
-    const gap = min === 0 ? '딱 맞았어요!' : `${min >= 60 ? Math.floor(min / 60) + '시간 ' : ''}${min % 60 ? (min % 60) + '분 ' : ''}${d < 0 ? '일렀어요' : '늦었어요'}`;
-    if (Math.abs(d) <= 3.75) { label = 'PERFECT!'; col = '#5fffd0'; ok = true; G.perfect++; SFX.perfect(); }
-    else if (Math.abs(d) <= 7.5) { label = 'GOOD'; col = '#9fd0ff'; ok = true; SFX.good(); }
-    else { label = 'MISS'; col = '#ff7b8a'; SFX.miss(); }
-    if (ok) { G.hits++; G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo); m = gMul(G.combo); p = L.pt[label === 'GOOD' ? 1 : 0] * m; G.score += p; }
-    txt = `${ok ? '🎯' : '💨'} ${label} 발사 ${gClock5(hr)} · 명령 ${gClock(o.h)} → ${gap}${p ? ` <b>+${p}점</b>${m > 1 ? ` (콤보 ×${m})` : ''}` : ''}`;
-  }
-  if (!ok) { if (G.combo >= 3) G.fx.push({ x: G_C, y: 120, t: 0, txt: '콤보가 끊겼어요', c: '#ff7b8a', s: 22 }); G.combo = 0; }
-  else if (G.combo === 3 || G.combo === 6) G.fx.push({ x: G_C, y: 120, t: 0, txt: `🔥 ${G.combo} 콤보! 점수 ×${m}`, c: '#ff9f5a', s: 30 });
-  G.fx.push({ x: sx, y: sy - 22, t: 0, txt: label, c: col, s: 28 });
-  if (p) G.fx.push({ x: sx, y: sy + 16, t: 0, txt: `+${p}`, c: '#fff', s: 18 });
-  if (ok) G.pops.push({ x: sx, y: sy, t: 0 });
-  o.res = { ok, txt }; G.nextT = 1.8;
-}
-const gTargets = () => G.sats ? G.sats.filter(s => !s.hit).concat(G.gold ? [G.gold] : []) : [];
-function gFire() { G.rockets.push({ a: gPad(), r0: G_PAD + 4, r: G_PAD + 4, hit: false, done: false }); }
+const gTargets = () => G.sats.filter(s => !s.hit).concat(G.gold ? [G.gold] : []);
 function gShoot() {
   if (!G || G.over || G.ready > 0 || G.cd > 0) return;
-  const L = G_LEVELS[G.lv];
-  if (L.clock) { const o = G.order; if (!o || o.res || G.t <= 0) return; G.cd = 0.35; gFire(); SFX.fire(); gJudge(G.hour); return; }
-  if (!L.endless && G.t <= 0) return;
+  const L = LV[G.lv]; if (L.kind !== 'launch' || G.t <= 0) return;
   if (G.shots <= 0) { G.msg = '로켓을 다 썼어요!'; return; }
-  if (G.lv === 1 && !gNight(G.hour)) { G.msg = '☀️ 지금 우리나라는 낮이에요. 밤(오후 6시)이 될 때까지 기다려요!'; SFX.no(); return; }
-  G.shots--; G.cd = 0.35; G.msg = ''; gFire(); SFX.fire();
+  if (L.night && !gNight(G.hour)) { G.msg = '☀️ 지금 우리나라는 낮이에요. 밤(오후 6시)이 될 때까지 기다려요!'; SFX.no(); return; }
+  G.shots--; G.cd = 0.35; G.msg = ''; G.rockets.push({ a: gPad(), r0: G_PAD + 4, r: G_PAD + 4, hit: false, done: false }); SFX.fire();
 }
-// 명중: 소행성 정중앙이면 PERFECT, 조금 비껴 맞으면 GOOD. 연속으로 맞히면 콤보 배수 (무한 도전은 빨라진 만큼 점수도 커져요)
+// 명중: 소행성 정중앙이면 PERFECT, 조금 비껴 맞으면 GOOD. 연속으로 맞히면 콤보 배수
 function gHit(r, s) {
-  const L = G_LEVELS[G.lv], [sx, sy] = gXY(s.a, G_RO), perf = Math.abs(gAng(r.a - s.a)) < G_PERF;
+  const L = LV[G.lv], [sx, sy] = gXY(s.a, G_RO), perf = Math.abs(gAng(r.a - s.a)) < G_PERF;
   s.hit = r.hit = r.done = true; G.hits++; G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo);
   const m = gMul(G.combo); let base, label, col;
   if (s.gold) { base = 500; label = '☄️ 황금 혜성!'; col = '#ffd23f'; G.shake = 0.35; G.gold = null; SFX.gold(); }
   else if (perf) { base = L.pt[0]; label = 'PERFECT!'; col = '#5fffd0'; G.perfect++; SFX.perfect(); }
   else { base = L.pt[1]; label = 'GOOD'; col = '#9fd0ff'; SFX.good(); }
   if (!s.gold) s.rt = 0.7;
-  const p = Math.round(base * G.speed / 10) * 10 * m; G.score += p;
+  const p = base * m; G.score += p;
   G.fx.push({ x: sx, y: sy - 20, t: 0, txt: label, c: col, s: perf || s.gold ? 30 : 24 }, { x: sx, y: sy + 16, t: 0, txt: `+${p}${m > 1 ? ` (×${m})` : ''}`, c: '#fff', s: 18 });
   if (G.combo === 3 || G.combo === 6) G.fx.push({ x: G_C, y: 120, t: 0, txt: `🔥 ${G.combo} 콤보! 점수 ×${m}`, c: '#ff9f5a', s: 30 });
   G.pops.push({ x: sx, y: sy, t: 0 });
   G.msg = G.combo >= 3 ? `🔥 ${G.combo} 콤보 중! (점수 ×${m})` : '';
-  if (L.endless && G.hits % 5 === 0) {
-    G.speed = +(G.speed * 1.12).toFixed(3);
-    G.fx.push({ x: G_C, y: 480, t: 0, txt: `⚡ 지구가 빨라졌어요! (×${G.speed.toFixed(1)})`, c: '#ffcf5a', s: 26 }); SFX.speed();
-    if (G.hits === 10) G.msg = '🪨 이제 소행성도 움직여요!';
-  }
 }
 function gMiss(r) {
-  const L = G_LEVELS[G.lv], [x, y] = gXY(r.a, G_END - 30);
-  G.fx.push({ x, y, t: 0, txt: L.endless ? '💔 MISS' : 'MISS', c: '#ff7b8a', s: 22 });
+  const [x, y] = gXY(r.a, G_END - 30);
+  G.fx.push({ x, y, t: 0, txt: 'MISS', c: '#ff7b8a', s: 22 });
   if (G.combo >= 3) G.fx.push({ x: G_C, y: 120, t: 0, txt: '콤보가 끊겼어요', c: '#ff7b8a', s: 22 });
-  G.combo = 0; SFX.miss();
-  if (L.endless) { G.lives--; G.shake = 0.25; G.msg = G.lives > 0 ? `💔 목숨이 ${G.lives}개 남았어요.` : '💔 목숨을 다 썼어요!'; }
-  else G.msg = '💨 빗나갔어요. 우리나라가 소행성을 정면으로 마주 볼 때 쏴 보세요.';
+  G.combo = 0; G.miss++; SFX.miss();
+  G.msg = '💨 빗나갔어요. 우리나라가 소행성을 정면으로 마주 볼 때 쏴 보세요.';
 }
-function gEnd(win) {
-  const g = state.game; if (!g.sb) g.sb = [0, 0, 0, 0]; while (g.sb.length < 4) g.sb.push(0); if (g.best == null) g.best = 0;
-  const score = G.score, prev = g.best, prevLv = g.sb[G.lv] || 0;
-  g.plays++; g.last = score; g.hits = (g.hits || 0) + G.hits;
-  g.sb[G.lv] = Math.max(prevLv, score); g.best = g.sb.reduce((a, b) => a + b, 0);
-  G.over = { win, score, up: g.best > prev, lvUp: score > prevLv };
-  if (win && G.lv < 3 && G.lv + 1 > g.cleared) g.cleared = G.lv + 1;
-  if (win || (G_LEVELS[G.lv].endless && score > prevLv)) SFX.win(); else SFX.lose();
-  save(); syncGame(); render();
-}
-function gStep(dt) {
-  const L = G_LEVELS[G.lv];
+function lStep(dt) {
+  const L = LV[G.lv];
   G.fx.forEach(f => { f.t += dt; }); G.fx = G.fx.filter(f => f.t < 1.1);
   G.pops.forEach(p => { p.t += dt; }); G.pops = G.pops.filter(p => p.t < 1.2);
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt);
-  G.hour += L.hph * G.speed * dt;
+  G.hour += L.hph * dt;
   if (G.over) return;
-  if (G.ready > 0) { G.ready -= dt; if (G.ready <= 0 && L.clock) gOrder(); return; }
-  if (L.endless) G.el += dt; else G.t = Math.max(0, G.t - dt);
-  G.cd = Math.max(0, G.cd - dt);
-  if (G.sats) {
-    G.sats.forEach(s => { if (s.hit) { s.rt -= dt; if (s.rt <= 0) gRespawn(s); } else s.a += s.v * L.hph * G.speed * dt; });
-    if (G.gold) { G.gold.life -= dt; if (G.gold.life <= 0) { G.gold = null; G.msg = '☄️ 황금 혜성이 사라졌어요…'; } }
-    else if ((G.goldT -= dt) <= 0) { gGold(); G.goldT = gRand(9, 14); }
-  } else {
-    const o = G.order;
-    if (o && !o.res) { o.gone += L.hph * dt * 15; if (o.gone > o.dist + 12) gJudge(null); }
-    else if (o && o.res && G.t > 0) { G.nextT -= dt; if (G.nextT <= 0) gOrder(); }
-  }
+  if (G.ready > 0) { G.ready -= dt; return; }
+  G.t = Math.max(0, G.t - dt); G.cd = Math.max(0, G.cd - dt);
+  G.sats.forEach(s => { if (s.hit) { s.rt -= dt; if (s.rt <= 0) gRespawn(s); } else s.a += s.v * L.hph * dt; });
+  if (G.gold) { G.gold.life -= dt; if (G.gold.life <= 0) { G.gold = null; G.msg = '☄️ 황금 혜성이 사라졌어요…'; } }
+  else if ((G.goldT -= dt) <= 0) { gGold(); G.goldT = gRand(9, 14); }
   G.rockets.forEach(r => {
     r.r += G_SPEED * dt;
     const [x, y] = gXY(r.a, r.r);
@@ -1593,17 +1563,15 @@ function gStep(dt) {
       const [sx, sy] = gXY(s.a, G_RO);
       if (Math.hypot(x - sx, y - sy) < G_HIT) gHit(r, s);
     });
-    if (!r.done && r.r > G_END) { r.done = true; if (G.sats) gMiss(r); }
+    if (!r.done && r.r > G_END) { r.done = true; gMiss(r); }
   });
   G.rockets = G.rockets.filter(r => !r.done);
   if (G.over || G.rockets.length) return;
-  if (L.endless) { if (G.lives <= 0) gEnd(false); }
-  else if (G.t <= 0 || (G.sats && G.shots <= 0)) gEnd(G.hits >= L.goal);
+  if (G.t <= 0 || G.shots <= 0) gEnd();
 }
-function gText(g, t, x, y, c, s) { g.font = `${s || 14}px "Do Hyeon","Noto Sans KR",sans-serif`; g.fillStyle = c; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, x, y); }
-function gDraw() {
+function lDraw() {
   const cv = document.getElementById('gCanvas'); if (!cv) return;
-  const g = cv.getContext('2d'), pad = gPad(), L = G_LEVELS[G.lv];
+  const g = cv.getContext('2d'), pad = gPad(), L = LV[G.lv];
   g.save();
   if (G.shake > 0) g.translate((Math.random() - 0.5) * 14 * G.shake / 0.35, (Math.random() - 0.5) * 14 * G.shake / 0.35);
   g.fillStyle = '#050914'; g.fillRect(-20, -20, G_W + 40, G_W + 40);
@@ -1614,26 +1582,16 @@ function gDraw() {
   g.strokeStyle = '#7cc4ff44'; g.setLineDash([4, 6]); g.beginPath(); g.arc(G_C, G_C, G_RO, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]);
   for (let i = 0; i < 24; i++) {
     const [x1, y1] = gXY(i * 15, G_RO - 7), [x2, y2] = gXY(i * 15, G_RO + 7);
-    g.strokeStyle = i % 6 ? (L.clock ? '#9fd0ffaa' : '#7cc4ff55') : '#7cc4ffbb'; g.lineWidth = i % 6 ? (L.clock ? 1.6 : 1) : 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    g.strokeStyle = i % 6 ? '#7cc4ff55' : '#7cc4ffbb'; g.lineWidth = i % 6 ? 1 : 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
   }
   [[0, '낮 12시', '#ffd76a'], [90, '오후 6시', '#a9b4d8'], [180, '밤 12시', '#a9b4d8'], [270, '오전 6시', '#a9b4d8']].forEach(([a, t, c]) => gText(g, t, ...gXY(a, G_RO + 31), c, 15));
+  // 중간 시각(3시간 간격)도 조금 작게: 오후 3시 · 오후 9시 · 오전 3시 · 오전 9시
+  [[45, '오후 3시'], [135, '오후 9시'], [225, '오전 3시'], [315, '오전 9시']].forEach(([a, t]) => gText(g, t, ...gXY(a, G_RO + 30), a === 45 || a === 315 ? '#e8cf86' : '#8f9cc4', 13));
   gText(g, '햇빛 ←', G_W - 40, 28, '#ffd76a', 16);
   // 조준선: 우리나라에서 바로 위(바깥쪽)로
   if (!G.over) {
-    const [ax, ay] = gXY(pad, G_PAD + 12), [bx, by] = gXY(pad, G_RO + 12), can = G.lv !== 1 || gNight(G.hour);
+    const [ax, ay] = gXY(pad, G_PAD + 12), [bx, by] = gXY(pad, G_RO + 12), can = !L.night || gNight(G.hour);
     g.setLineDash([2, 6]); g.strokeStyle = can ? '#ff9f5a66' : '#ffffff22'; g.lineWidth = 2; g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke(); g.setLineDash([]);
-  }
-  // 3단계: 명령 받은 시각(빨간 점선)과, 결과가 나오면 요격 자리(🪨)
-  const o = L.clock ? G.order : null;
-  if (o && o.ref != null && !o.res) {
-    const ra = (o.ref - 12) * 15, [x, y] = gXY(ra, G_RO + 12);
-    g.setLineDash([5, 5]); g.strokeStyle = '#ff6b7a'; g.lineWidth = 2; g.beginPath(); g.moveTo(G_C, G_C); g.lineTo(x, y); g.stroke(); g.setLineDash([]);
-    gText(g, '명령 시각', ...gXY(ra, G_RO - 22), '#ff8f9a', 14);
-  }
-  if (o && o.res) {
-    const [x, y] = gXY(o.a, G_RO);
-    g.strokeStyle = o.res.ok ? '#5fe0a0' : '#ffcf5a'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 22, 0, 7); g.stroke();
-    gText(g, '🪨', x, y, '#fff', 28); gText(g, gClock(o.h), ...gXY(o.a, G_RO + 31), '#ffcf5a', 15);
   }
   // 지구 (가장자리 바깥은 자르고, 왼쪽 절반은 밤)
   g.save(); g.beginPath(); g.arc(G_C, G_C, G_RE, 0, 2 * Math.PI); g.clip();
@@ -1654,7 +1612,7 @@ function gDraw() {
   g.fillStyle = '#ff4d5e'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(px, py, 7, 0, 2 * Math.PI); g.fill(); g.stroke();
   gText(g, '우리나라', ...gXY(pad, G_PAD - 26), '#fff', 13);
   // 소행성 (맞히면 💥 뒤 다른 자리에 새로 나타나요)
-  (G.sats || []).forEach(s => { const [x, y] = gXY(s.a, G_RO); if (s.hit) { if (s.rt > 0) gText(g, '💥', x, y, '#fff', 30); } else gText(g, '🪨', x, y, '#fff', 30); });
+  G.sats.forEach(s => { const [x, y] = gXY(s.a, G_RO); if (s.hit) { if (s.rt > 0) gText(g, '💥', x, y, '#fff', 30); } else gText(g, '🪨', x, y, '#fff', 30); });
   if (G.gold) {
     const [x, y] = gXY(G.gold.a, G_RO), f = G.gold.life / G.gold.max;
     g.strokeStyle = '#ffd23f'; g.lineWidth = 4; g.beginPath(); g.arc(x, y, 24, -Math.PI / 2, -Math.PI / 2 + f * 2 * Math.PI); g.stroke();
@@ -1679,34 +1637,250 @@ function gDraw() {
   const hud = document.getElementById('gHud');
   if (hud) {
     const sec = Math.ceil(G.t), m = gMul(G.combo);
-    let h = (L.endless ? `<span class="pill">⏱ 버틴 시간 <b>${Math.floor(G.el)}초</b></span><span class="pill${G.lives <= 1 ? ' hot' : ''}">❤️ <b>${'❤'.repeat(Math.max(0, G.lives)) || '0'}</b></span><span class="pill">⚡ 속도 <b>×${G.speed.toFixed(1)}</b></span>`
-      : `<span class="pill${sec <= 10 && !G.over ? ' hot' : ''}">⏱ <b>${sec}초</b></span>`)
-      + `<span class="pill">⭐ 점수 <b>${G.score}</b></span><span class="pill${G.combo >= 3 ? ' hot' : ''}">🔥 콤보 <b>${G.combo}</b>${m > 1 ? ` ×${m}` : ''}</span>`;
-    if (L.clock) h += `<span class="pill">🎯 성공 <b>${G.hits}/${L.goal}</b></span><span class="pill">🕘 시계 <b>꺼짐 ❓</b></span>`;
-    else if (L.endless) h += `<span class="pill">🪨 요격 <b>${G.hits}</b></span>`;
-    else h += `<span class="pill">🚀 로켓 <b>${G.shots}</b></span><span class="pill">🪨 요격 <b>${G.hits}/${L.goal}</b></span><span class="pill">🕘 <b>${gClock(G.hour)}</b> ${gNight(G.hour) ? '🌙' : '☀️'}</span>`;
+    const h = `<span class="pill${sec <= 10 && !G.over ? ' hot' : ''}">⏱ <b>${sec}초</b></span><span class="pill">⭐ 점수 <b>${G.score}</b></span><span class="pill${G.combo >= 3 ? ' hot' : ''}">🔥 콤보 <b>${G.combo}</b>${m > 1 ? ` ×${m}` : ''}</span>`
+      + `<span class="pill">🚀 로켓 <b>${G.shots}</b></span><span class="pill">🪨 요격 <b>${G.hits}/${L.goal}</b></span><span class="pill">🕘 <b>${gClock(G.hour)}</b> ${gNight(G.hour) ? '🌙' : '☀️'}</span>`;
     if (hud.dataset.h !== h) { hud.innerHTML = h; hud.dataset.h = h; }
   }
-  const bar = document.getElementById('gBar'); if (bar) bar.style.width = L.endless ? (G.lives / 3 * 100) + '%' : (G.t / L.time * 100).toFixed(1) + '%';
-  const ord = document.getElementById('gOrd');
-  if (ord) {
-    const h = !o ? '<div class="otxt">🚨 요격 명령을 기다리는 중…</div>' : `<div class="otxt">🚨 요격 명령 ${G.round}<br>${o.txt}</div>${o.res ? `<div class="fb ${o.res.ok ? 'ok' : 'bad'}">${o.res.txt}</div>` : '<p class="note">우리나라가 그 시각 자리에 왔을 때 발사! (화면 누르기 · 스페이스바)</p>'}`;
-    if (ord.dataset.h !== h) { ord.innerHTML = h; ord.dataset.h = h; }
-  }
+  const bar = document.getElementById('gBar'); if (bar) bar.style.width = (G.t / L.time * 100).toFixed(1) + '%';
   const msg = document.getElementById('gMsg'); if (msg && msg.textContent !== G.msg) msg.textContent = G.msg;
 }
+
+/* ── 3·4단계: 우리나라에서 본 밤하늘 ── */
+/* 하늘 계산: 적위 dec, 시간각 H(°) → 고도·방위 → 관측 방향(az0) 화면으로 */
+function oAltAz(dec, H) {
+  const d = dec * OD, h = H * OD, p = O_LAT * OD;
+  const alt = Math.asin(Math.sin(p) * Math.sin(d) + Math.cos(p) * Math.cos(d) * Math.cos(h));
+  const az = Math.atan2(-Math.cos(d) * Math.sin(h), Math.sin(d) * Math.cos(p) - Math.cos(d) * Math.cos(h) * Math.sin(p)); // 북 0, 동 90°
+  return [alt, az];
+}
+const oVec = (alt, az) => [Math.cos(alt) * Math.sin(az), Math.cos(alt) * Math.cos(az), Math.sin(alt)];
+const oDot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+function oCam(az0) {
+  const a = az0 * OD, al = (az0 === 0 ? 30 : 22) * OD, f = [Math.sin(a) * Math.cos(al), Math.cos(a) * Math.cos(al), Math.sin(al)], r = [Math.cos(a), -Math.sin(a), 0];
+  return { az0, f, r, u: [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]], F: (O_W / 2) / Math.tan(O_FOV / 2 * OD), cy: O_H * 0.5 };
+}
+function oProj(C, v) { const z = oDot(v, C.f); if (z < 0.08) return null; return [O_W / 2 + oDot(v, C.r) / z * C.F, C.cy - oDot(v, C.u) / z * C.F]; }
+const oStarV = (dec, H) => { const [al, az] = oAltAz(dec, H); return { v: oVec(al, az), alt: al }; };
+// 화면 안쪽(지평선 위)에 잘 보이는 자리인지
+function oShow(C, dec, H, m) { const s = oStarV(dec, H); if (s.alt < 9 * OD) return null; const p = oProj(C, s.v); m = m || 40; return p && p[0] > m && p[0] < O_W - m && p[1] > m && p[1] < O_H * 0.74 ? p : null; }
+
+// 새 문제
+function oNext() {
+  const L = LV[G.lv];
+  let az0; do { az0 = oPick(O_DIRS); } while (az0 === G.lastAz && Math.random() < 0.75);
+  G.lastAz = az0; G.round++;
+  const sh = Math.random() * 360; // 별자리 배치가 매번 달라지게 하늘을 돌려 둬요
+  G.q = L.kind === 'pred' ? oMakePred(az0, sh) : oMakePhoto(az0, sh); G.phase = 'ask'; SFX.appear(); render();
+}
+/* 망원경 예측: ★별의 지나는 길(1시간 전 ~ 몇 시간 뒤)을 화면 점으로 미리 구해 둬요.
+   누른 자리는 길 위의 가장 가까운 점으로 맞춰서, '몇 시간 뒤 자리'를 눌렀는지로 채점해요. */
+function oMakePred(az0, sh) {
+  const C = oCam(az0);
+  for (let k = 0; k < 500; k++) {
+    const N = oPick(az0 === 0 ? [2, 3, 4, 5] : [2, 3, 4]);
+    // 북쪽은 북극성에서 너무 가깝지 않은 별(원이 크게 보이게), 다른 쪽은 하늘 적도 근처 별
+    const dec = az0 === 0 ? 55 + Math.random() * 13 : -12 + Math.random() * 36, H = Math.random() * 360 - 180;
+    const a0 = oShow(C, dec, H - 15, 50), a1 = oShow(C, dec, H, 60);
+    if (!(a0 && a1 && oShow(C, dec, H + 15 * N, 50) && oShow(C, dec, H + 7.5 * N, 40)) || Math.hypot(a0[0] - a1[0], a0[1] - a1[1]) < 50) continue;
+    // 길(점선): 북쪽은 한 바퀴 전체, 다른 쪽은 화면에 보이는 만큼 길게 (길이 끝나는 곳이 답의 힌트가 되지 않게)
+    const hA = az0 === 0 ? -1.5 : -6, hB = az0 === 0 ? 22.5 : N + 6, path = [];
+    for (let h = hA; h <= hB + 1e-6; h += 0.05) { const st = oStarV(dec, H + 15 * h), p = st.alt > 0 ? oProj(C, st.v) : null; if (p && p[0] > -40 && p[0] < O_W + 40 && p[1] > -40 && p[1] < O_H + 40) path.push({ h, x: p[0], y: p[1] }); }
+    return { kind: 'pred', az0, sh, dec, H, N, hA, hB, tt: 0, age: 0, tap: null, th: null, path };
+  }
+  return oMakePred(az0 === 0 ? 180 : 0, sh);
+}
+function oMakePhoto(az0, sh) {
+  let sub = oPick(['dir', 'time', 'move']);
+  if (sub === 'time') az0 = 0;
+  const C = oCam(az0), D = az0 === 0 ? oPick([2, 3, 4, 5, 6]) : oPick([2, 3, 4]);
+  // 표시할 궤적: 밝고, 처음과 끝이 모두 화면 안에 있고, 충분히 긴 것
+  let mark = null;
+  const cand = oShuf(O_STARS.filter(s => !s.pol && s.m < 3.2));
+  for (const s of cand) { const a = oShow(C, s.dec, s.h0 + sh, 60), b = oShow(C, s.dec, s.h0 + sh + 15 * D, 60); if (a && b && Math.hypot(a[0] - b[0], a[1] - b[1]) > 70) { mark = s; break; } }
+  if (!mark && sub !== 'dir') sub = 'dir';
+  const aStart = Math.random() < 0.5, q = { kind: 'photo', sub, az0, sh, D, mark, aStart, tt: D, age: 0 };
+  if (sub === 'dir') { q.opts = O_DIRS.map(a => O_NAME[a] + '쪽'); q.ans = O_DIRS.indexOf(az0); }
+  else if (sub === 'time') { const s = new Set([D]); for (const d of oShuf([-2, -1, 1, 2, 3])) { if (s.size >= 4) break; if (D + d >= 1 && D + d <= 8) s.add(D + d); } q.opts = oShuf([...s]).map(h => h + '시간'); q.ans = q.opts.indexOf(D + '시간'); }
+  else { q.opts = ['A → B', 'B → A']; q.ans = aStart ? 0 : 1; }
+  return q;
+}
+// 점수 매기기 (콤보 배수)
+function oGain(base, label, x, y, col) {
+  G.hits++; G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo);
+  const m = gMul(G.combo), p = base * m;
+  G.score += p;
+  G.fx.push({ x, y: y - 26, t: 0, txt: label, c: col, s: 30 }, { x, y: y + 14, t: 0, txt: `+${p}${m > 1 ? ` (×${m})` : ''}`, c: '#fff', s: 20 });
+  if (G.combo === 3 || G.combo === 6) G.fx.push({ x: O_W / 2, y: 80, t: 0, txt: `🔥 ${G.combo} 콤보! 점수 ×${m}`, c: '#ff9f5a', s: 30 });
+  return { p, m };
+}
+function oLose(x, y, label) {
+  G.miss++; if (G.combo >= 3) G.fx.push({ x: O_W / 2, y: 80, t: 0, txt: '콤보가 끊겼어요', c: '#ff7b8a', s: 24 });
+  G.combo = 0; SFX.miss(); G.shake = 0.3;
+  G.fx.push({ x, y, t: 0, txt: label, c: '#ff7b8a', s: 28 });
+}
+// 보기 고르기 (4단계 사진 판독)
+function oAnswer(i) {
+  const q = G && G.q;
+  if (!q || !q.opts || G.phase !== 'ask' || G.over) return;
+  const ok = i === q.ans; let txt;
+  q.pick = i;
+  if (ok) { const g = oGain(200, '⭕ 정답!', O_W / 2, O_H * 0.42, '#5fffd0'); SFX.perfect(); txt = `⭕ 정답! <b>+${g.p}점</b>${g.m > 1 ? ` (콤보 ×${g.m})` : ''}`; }
+  else { oLose(O_W / 2, O_H * 0.42, '❌'); G.t = Math.max(0, G.t - 5); txt = `❌ 정답은 <b>${q.opts[q.ans]}</b>이에요. (−5초)`; }
+  q.res = { ok, txt, ex: oWhy(q) };
+  G.phase = 'res'; G.wait = ok ? 1.8 : 3.2; render();
+}
+function oWhy(q) {
+  if (q.sub === 'dir') return O_DESC[q.az0];
+  if (q.sub === 'time') return `궤적이 북극성을 중심으로 ${q.D * 15}° 돌았어요. ${q.D * 15}° ÷ 15° = ${q.D}시간이에요.`;
+  return `${O_DESC[q.az0]} 그래서 별은 ${q.aStart ? 'A → B' : 'B → A'}로 움직였어요.`;
+}
+// 망원경 예측: 화면 누르기 → 길 위의 가장 가까운 점으로
+function oTap(e, el) {
+  if (!G || G.over) return;
+  if (LV[G.lv].kind === 'launch') return gShoot();
+  if (!G.q) return;
+  if (G.phase === 'res') { G.wait = Math.min(G.wait, 0.05); return; }
+  const q = G.q; if (q.kind !== 'pred' || G.phase !== 'ask') return;
+  const r = el.getBoundingClientRect(), x = (e.clientX - r.left) * O_W / r.width, y = (e.clientY - r.top) * O_H / r.height;
+  let best = null, bd = 1e9; q.path.forEach(P => { const d = Math.hypot(P.x - x, P.y - y); if (d < bd) { bd = d; best = P; } });
+  if (!best || bd > 80) { G.fx.push({ x, y, t: 0, txt: '노란 점선(별이 지나는 길) 위를 눌러요', c: '#ffd34d', s: 20 }); SFX.no(); return; }
+  q.tap = [best.x, best.y]; q.th = best.h; q.tt = 0; G.phase = 'anim'; SFX.tap(); render();
+}
+function oJudgePred() {
+  const q = G.q, C = oCam(q.az0), rp = oProj(C, oStarV(q.dec, q.H + 15 * q.N).v) || q.tap, d = q.th - q.N, ad = Math.abs(d);
+  q.err = ad; q.rp = rp;
+  const where = q.th <= 0.02 ? '★별이 <b>지나온 쪽</b>(1시간 전 쪽)을 눌렀어요.' : `<b>${oHM(q.th)} 뒤</b> 자리를 눌렀어요${ad < 0.09 ? '' : ` (${oHM(ad)} ${d < 0 ? '모자라요' : '지나쳤어요'})`}.`;
+  let txt;
+  if (ad <= 0.175) { const g = oGain(300, 'PERFECT!', rp[0], rp[1], '#5fffd0'); G.perfect++; SFX.perfect(); txt = `🎯 PERFECT! ${where} <b>+${g.p}점</b>${g.m > 1 ? ` (콤보 ×${g.m})` : ''}`; }
+  else if (ad <= 0.5) { const g = oGain(180, 'GOOD', rp[0], rp[1], '#9fd0ff'); SFX.good(); txt = `👍 GOOD! ${where} <b>+${g.p}점</b>${g.m > 1 ? ` (콤보 ×${g.m})` : ''}`; }
+  else { oLose(rp[0], rp[1] - 26, 'MISS'); txt = `💨 ${where} 초록 동그라미가 ${q.N}시간 뒤 자리예요.`; }
+  q.res = { ok: ad <= 0.5, txt, ex: `${O_DESC[q.az0]} 별은 1시간에 15°씩 움직여서, ${q.N}시간 동안 '1시간 전 → 지금' 길이의 ${q.N}배(${q.N * 15}°)를 가요.` };
+  G.phase = 'res'; G.wait = ad <= 0.5 ? 2.2 : 3.6; render();
+}
+function oStep(dt) {
+  G.fx.forEach(f => { f.t += dt; }); G.fx = G.fx.filter(f => f.t < 1.1);
+  if (G.shake > 0) G.shake = Math.max(0, G.shake - dt);
+  if (G.over) return;
+  if (G.phase === 'wait') { G.ready -= dt; if (G.ready <= 0) oNext(); return; }
+  const q = G.q;
+  if (G.phase === 'ask') { G.t = Math.max(0, G.t - dt); if (G.t <= 0) return gEnd(); q.age += dt; }
+  else if (G.phase === 'anim') { q.tt = Math.min(q.N, q.tt + dt * q.N / (1 + 0.4 * q.N)); if (q.tt >= q.N) oJudgePred(); }
+  else if (G.phase === 'res') { G.wait -= dt; if (G.wait <= 0) { if (G.t <= 0) return gEnd(); oNext(); } }
+}
+/* 그리기 */
+function oText(g, t, x, y, c, s, stroke) {
+  g.font = `${s || 15}px "Do Hyeon","Noto Sans KR",sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (stroke !== false) { g.lineWidth = 4; g.lineJoin = 'round'; g.strokeStyle = 'rgba(4,8,22,.9)'; g.strokeText(t, x, y); }
+  g.fillStyle = c; g.fillText(t, x, y);
+}
+function oTrail(g, C, s, H0, H1, col, w) {
+  const n = Math.max(2, Math.ceil(Math.abs(H1 - H0) / 2)); g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.beginPath(); let pen = false;
+  for (let i = 0; i <= n; i++) { const st = oStarV(s.dec, H0 + (H1 - H0) * i / n), p = st.alt > 0 ? oProj(C, st.v) : null; if (!p) { pen = false; continue; } if (pen) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); pen = true; }
+  g.stroke();
+}
+function oDraw() {
+  const cv = document.getElementById('gCanvas'); if (!cv || !G) return;
+  const g = cv.getContext('2d'), q = G.q;
+  g.save();
+  if (G.shake > 0) g.translate((Math.random() - 0.5) * 12 * G.shake / 0.3, (Math.random() - 0.5) * 12 * G.shake / 0.3);
+  const sky = g.createLinearGradient(0, 0, 0, O_H); sky.addColorStop(0, '#040817'); sky.addColorStop(1, '#13224f'); g.fillStyle = sky; g.fillRect(-20, -20, O_W + 40, O_H + 40);
+  if (!q) { oText(g, G.phase === 'wait' ? '준비…' : '', O_W / 2, O_H / 2, '#9fd0ff', 44); g.restore(); gHud(); return; }
+  const C = oCam(q.az0), photo = q.kind === 'photo', hideDir = G.phase === 'ask' && photo && q.sub === 'dir';
+  // 별과 자취
+  const tNow = q.tt;
+  O_STARS.forEach(s => {
+    const H0 = s.h0 + q.sh, bright = s.m < 3.4;
+    // 사진: '몇 시간' 문제는 궤적이 겹쳐 보이지 않게 밝은 별만 (한 궤적의 각도를 셀 수 있게)
+    if (photo) { if (s.m < (q.sub === 'time' ? 2.3 : 3.6)) oTrail(g, C, s, H0, H0 + 15 * q.D, s.m < 2.4 ? 'rgba(235,242,255,.95)' : 'rgba(190,210,255,.55)', s.m < 2.4 ? 2.2 : 1.3); return; }
+    if (tNow > 0.01 && bright) oTrail(g, C, s, H0, H0 + 15 * tNow, 'rgba(200,220,255,.35)', 1.3);
+    const st = oStarV(s.dec, H0 + 15 * tNow); if (st.alt <= 0) return; const p = oProj(C, st.v); if (!p) return;
+    g.fillStyle = s.pol ? '#fff4c8' : '#e8eeff'; g.beginPath(); g.arc(p[0], p[1], clamp(3.3 - s.m * 0.55, 0.7, 3), 0, 7); g.fill();
+    if (s.pol && !hideDir) oText(g, '북극성', p[0], p[1] - 16, '#ffe28a', 15);
+  });
+  // 망원경 예측: ★별이 지나는 길(점선) · 1시간 전 → 지금(1시간 = 15°) · 누른 자리
+  if (q.kind === 'pred') {
+    const s = { dec: q.dec }, st = oStarV(q.dec, q.H + 15 * tNow), p = oProj(C, st.v), p0 = oProj(C, oStarV(q.dec, q.H - 15).v), pn = oProj(C, oStarV(q.dec, q.H).v);
+    g.setLineDash([6, 7]); oTrail(g, C, s, q.H + 15 * q.hA, q.H + 15 * q.hB, 'rgba(255,211,77,.55)', 2.2); g.setLineDash([]);
+    oTrail(g, C, s, q.H - 15, q.H, '#ff9f5a', 5);
+    if (p0 && pn) {
+      // 글씨는 주황 선에서 옆으로 비켜서 (별·선과 겹치지 않게)
+      const dx = p0[0] - pn[0], dy = p0[1] - pn[1], Lg = Math.hypot(dx, dy) || 1, ux = dx / Lg, uy = dy / Lg;
+      g.strokeStyle = '#ff9f5a'; g.lineWidth = 2.5; g.beginPath(); g.arc(p0[0], p0[1], 8, 0, 7); g.stroke();
+      oText(g, '1시간 전', p0[0] + ux * 40, p0[1] + uy * 26, '#ffb98a', 17);
+      const nx = -uy, ny = ux, sg = ny > 0 ? 1 : -1; // 선의 아래쪽 옆에
+      oText(g, '1시간 = 15°', (p0[0] + pn[0]) / 2 + nx * sg * 30, (p0[1] + pn[1]) / 2 + ny * sg * 24, '#ffb98a', 16);
+    }
+    if (tNow > 0.01) oTrail(g, C, s, q.H, q.H + 15 * tNow, '#ffd34d', 4);
+    if (G.phase === 'res' && q.rp) { g.strokeStyle = '#5fe0a0'; g.lineWidth = 3; g.beginPath(); g.arc(q.rp[0], q.rp[1], 20, 0, 7); g.stroke(); oText(g, `${q.N}시간 뒤`, q.rp[0], q.rp[1] + 34, '#5fe0a0', 17); }
+    if (p) { g.strokeStyle = '#ffd34d'; g.lineWidth = 3; g.beginPath(); g.arc(p[0], p[1], 14, 0, 7); g.stroke(); g.fillStyle = '#fff6c8'; g.beginPath(); g.arc(p[0], p[1], 5, 0, 7); g.fill(); if (G.phase === 'ask') oText(g, '★ 지금', p[0], p[1] - 28, '#ffd34d', 20); }
+    if (q.tap) {
+      const [x, y] = q.tap; g.strokeStyle = '#5fe0ff'; g.lineWidth = 3; g.beginPath(); g.arc(x, y, 18, 0, 7); g.moveTo(x - 26, y); g.lineTo(x - 8, y); g.moveTo(x + 8, y); g.lineTo(x + 26, y); g.moveTo(x, y - 26); g.lineTo(x, y - 8); g.moveTo(x, y + 8); g.lineTo(x, y + 26); g.stroke();
+    }
+  }
+  // 사진 판독: A·B 표시, 각도기(몇 시간 문제)
+  if (photo && q.mark) {
+    const s = q.mark, H0 = s.h0 + q.sh, pa = oProj(C, oStarV(s.dec, H0).v), pb = oProj(C, oStarV(s.dec, H0 + 15 * q.D).v);
+    if (q.sub === 'move' && pa && pb) {
+      oTrail(g, C, s, H0, H0 + 15 * q.D, '#ffd34d', 3);
+      const [A, B] = q.aStart ? [pa, pb] : [pb, pa];
+      [[A, 'A'], [B, 'B']].forEach(([p, t]) => { g.fillStyle = '#ffd34d'; g.beginPath(); g.arc(p[0], p[1], 15, 0, 7); g.fill(); oText(g, t, p[0], p[1] + 1, '#2a1c00', 18, false); });
+    }
+  }
+  if (photo && q.sub === 'time') {
+    const pol = O_STARS[O_STARS.length - 1], pp = oProj(C, oStarV(pol.dec, pol.h0).v);
+    if (pp && q.mark) {
+      // 노란 궤적 하나와 그 양 끝에서 북극성으로 잇는 점선, 바깥 원의 15° 눈금으로 각도를 세어요
+      const s = q.mark, H0 = s.h0 + q.sh, pa = oProj(C, oStarV(s.dec, H0).v), pb = oProj(C, oStarV(s.dec, H0 + 15 * q.D).v);
+      const R = Math.max(90, Math.hypot(pa[0] - pp[0], pa[1] - pp[1]) + 26);
+      g.strokeStyle = 'rgba(255,211,77,.7)'; g.lineWidth = 1.5; g.beginPath(); g.arc(pp[0], pp[1], R, 0, 7); g.stroke();
+      for (let a = 0; a < 360; a += 15) { const r0 = R - (a % 90 ? 7 : 13), r1 = R + (a % 90 ? 7 : 13); g.lineWidth = a % 90 ? 1.5 : 2.5; g.beginPath(); g.moveTo(pp[0] + Math.cos(a * OD) * r0, pp[1] - Math.sin(a * OD) * r0); g.lineTo(pp[0] + Math.cos(a * OD) * r1, pp[1] - Math.sin(a * OD) * r1); g.stroke(); }
+      g.setLineDash([5, 5]); g.strokeStyle = 'rgba(255,211,77,.85)'; g.lineWidth = 2; [pa, pb].forEach(p => { const dx = p[0] - pp[0], dy = p[1] - pp[1], L = Math.hypot(dx, dy) || 1; g.beginPath(); g.moveTo(pp[0], pp[1]); g.lineTo(pp[0] + dx / L * R, pp[1] + dy / L * R); g.stroke(); }); g.setLineDash([]);
+      oTrail(g, C, s, H0, H0 + 15 * q.D, '#ffd34d', 3.5);
+      oText(g, '바깥 원 눈금 한 칸 = 15°', pp[0], Math.min(O_H * 0.7, pp[1] + R + 26), '#ffd34d', 16);
+    }
+  }
+  // 땅과 지평선
+  const hz = []; for (let a = -70; a <= 70; a += 5) { const p = oProj(C, oVec(0, (q.az0 + a) * OD)); if (p) hz.push(p); }
+  if (hz.length > 1) {
+    g.fillStyle = '#132a1c'; g.beginPath(); g.moveTo(hz[0][0], hz[0][1]); hz.forEach(p => g.lineTo(p[0], p[1])); g.lineTo(O_W + 20, O_H + 20); g.lineTo(-20, O_H + 20); g.closePath(); g.fill();
+    g.strokeStyle = '#3d6b4f'; g.lineWidth = 2; g.beginPath(); hz.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke();
+    // 방위 (사진의 방향 문제를 푸는 동안은 가려요)
+    [[-90, 8], [-45, 4], [0, 8], [45, 4], [90, 8]].forEach(([d, w]) => {
+      const az = ((q.az0 + d) % 360 + 360) % 360, p = oProj(C, oVec(0, az * OD)); if (!p || p[0] < 10 || p[0] > O_W - 10) return;
+      const nm = { 0: '북', 45: '북동', 90: '동', 135: '남동', 180: '남', 225: '남서', 270: '서', 315: '북서' }[az];
+      oText(g, hideDir ? '?' : nm, p[0], p[1] + 22, d === 0 ? '#ffcf5a' : '#cfe0c8', d === 0 ? 24 : 17);
+    });
+  }
+  if (photo) oText(g, `📷 별 궤적 사진${q.sub === 'time' ? '' : ` (${q.D}시간 노출)`}`, O_W - 120, 26, '#cfe0ff', 16);
+  else if (G.phase !== 'ask') oText(g, `⏱ ${oHM(tNow) === '0분' ? '0시간' : oHM(tNow)} 지남`, O_W - 100, 26, '#cfe0ff', 16);
+  // 점수 글자
+  G.fx.forEach(f => { g.globalAlpha = Math.max(0, 1 - f.t / 1.1); oText(g, f.txt, f.x, f.y - f.t * 36, f.c, f.s); g.globalAlpha = 1; });
+  g.restore();
+  gHud();
+}
+function gHud() {
+  const hud = document.getElementById('gHud'), L = LV[G.lv];
+  if (hud) {
+    const sec = Math.ceil(G.t), m = gMul(G.combo);
+    const h = `<span class="pill${sec <= 10 && !G.over ? ' hot' : ''}">⏱ <b>${sec}초</b></span><span class="pill">⭐ 점수 <b>${G.score}</b></span><span class="pill${G.combo >= 3 ? ' hot' : ''}">🔥 콤보 <b>${G.combo}</b>${m > 1 ? ` ×${m}` : ''}</span><span class="pill">🔭 성공 <b>${G.hits}/${L.goal}</b></span><span class="pill">${G.round}번째 관측</span>`;
+    if (hud.dataset.h !== h) { hud.innerHTML = h; hud.dataset.h = h; }
+  }
+  const bar = document.getElementById('gBar'); if (bar) bar.style.width = (G.t / L.time * 100).toFixed(1) + '%';
+}
+function gDraw() { if (!G) return; if (LV[G.lv].kind === 'launch') lDraw(); else oDraw(); }
 function gLoop(ts) {
   if (!G || state.view !== 'game') { if (G) G.raf = 0; return; }
   const dt = G.last ? Math.min(0.05, (ts - G.last) / 1000) : 0; G.last = ts;
-  gStep(dt); gDraw();
+  if (LV[G.lv].kind === 'launch') lStep(dt); else oStep(dt);
+  gDraw();
   G.raf = requestAnimationFrame(gLoop);
 }
 const gScoreLine = () => `<p class="gsc">이번 점수 <b>${G.over.score}점</b> · 내 최고 점수(단계별 최고의 합) <b>${state.game.best}점</b>${G.over.up ? ' 🎉 기록 갱신!' : ''}</p>`;
-// 게임 점수 보내기: 임무 성적과 따로 '일주운동 게임 현황' 탭에 한 줄. 요격 수는 지금까지 맞힌 소행성을 모두 더한 수 (합동 미션)
-const GCOLS = ['최고 점수', '도전 횟수', '마지막 점수', '깬 단계', '1단계 최고', '2단계 최고', '3단계 최고', '무한 최고', '요격 수'];
+// 게임 점수 보내기: 임무 성적과 따로 '일주운동 게임 현황' 탭에 한 줄. 성공 수는 지금까지 요격·관측에 성공한 수를 모두 더한 수 (합동 미션)
+const GCOLS = ['최고 점수', '도전 횟수', '마지막 점수', '깬 단계', '1단계 최고', '2단계 최고', '3단계 최고', '4단계 최고', '성공 수'];
 async function syncGame() {
   if (!CONFIG.SUBMIT_URL || !state.code || !state.num) return;
-  const g = state.game, sb = g.sb || [0, 0, 0, 0];
+  const g = gData(), sb = g.sb;
   try { if (await hello()) await post({ lesson: CONFIG.LESSON + ' 게임', action: 'save', code: state.code, num: state.num, name: state.name, cols: GCOLS, vals: [g.best || 0, g.plays, g.last || 0, g.cleared, sb[0], sb[1], sb[2], sb[3] || 0, g.hits || 0] }); } catch (err) {}
   loadRank();
 }
@@ -1732,62 +1906,75 @@ function rankBox() {
 // 교사 화면: 반별 게임 최고 점수와 반 순위
 function gameBox(T, clsName) {
   const D = T.game;
-  if (!D || !D.rows.length) return '<section class="panel" style="margin-top:14px"><h3>🚀 자전 지구 발사대 게임</h3><p class="muted">아직 게임 기록이 없어요. (임무 4를 마친 학생에게 열려요)</p></section>';
-  const h = D.headers, iN = h.indexOf('학번'), iM = h.indexOf('이름'), iB = h.indexOf('최고 점수'), iP = h.indexOf('도전 횟수'), iC = h.indexOf('깬 단계'), iH = h.indexOf('요격 수');
+  if (!D || !D.rows.length) return '<section class="panel" style="margin-top:14px"><h3>🌏 자전 · 별 관측 미션 게임</h3><p class="muted">아직 게임 기록이 없어요. (임무 4를 마친 학생에게 열려요)</p></section>';
+  const h = D.headers, iN = h.indexOf('학번'), iM = h.indexOf('이름'), iB = h.indexOf('최고 점수'), iP = h.indexOf('도전 횟수'), iC = h.indexOf('깬 단계'), iH = ['성공 수', '관측 수', '요격 수'].map(k => h.indexOf(k)).find(i => i >= 0);
   const rows = D.rows.map(r => { const n = String(r[iN] || ''); return { c: n.length > 2 ? n.slice(0, -2) : '', num: r[iN], name: r[iM], best: +r[iB] || 0, plays: +r[iP] || 0, cl: +r[iC] || 0, hits: iH >= 0 ? +r[iH] || 0 : 0 }; });
   const by = {}; rows.forEach(r => { if (r.c) (by[r.c] = by[r.c] || []).push(r); });
   const ks = Object.keys(by).sort((a, b) => a.localeCompare(b, 'ko', { numeric: true }));
   const tops = ks.map(c => { const L = by[c].slice().sort((a, b) => b.best - a.best), b = L[0]; return `<tr><td>${esc(clsName(c))}</td><td class="tok">${b.best}점</td><td>${L.filter(r => r.best === b.best).map(r => esc(r.num + ' ' + r.name)).join(', ')}</td><td>${L.length}명</td><td>${Math.round(L.reduce((s, r) => s + r.best, 0) / L.length)}점</td></tr>`; }).join('');
-  const sel = T.cls && by[T.cls] ? `<h3 style="margin-top:14px">${esc(clsName(T.cls))} 순위</h3><table class="ttbl"><thead><tr><th>순위</th><th>학생</th><th>최고 점수</th><th>깬 단계</th><th>요격</th><th>도전</th></tr></thead><tbody>${by[T.cls].slice().sort((a, b) => b.best - a.best).map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.num + ' ' + r.name)}</td><td>${r.best}점</td><td>${r.cl}/3</td><td>${r.hits}개</td><td>${r.plays}번</td></tr>`).join('')}</tbody></table>` : '';
-  return `<section class="panel" style="margin-top:14px"><h3>🚀 자전 지구 발사대 게임 · 반별 최고 점수</h3><div class="tbl-wrap"><table class="ttbl"><thead><tr><th>반</th><th>최고 점수</th><th>학생</th><th>참여</th><th>반 평균(각자 최고)</th></tr></thead><tbody>${tops}</tbody></table>${sel}</div><p class="note">게임 점수는 임무 성적과 따로 시트의 '일주운동 게임 현황' 탭에 모여요. 반을 누르면 그 반 순위가 보여요.</p></section>`;
+  const sel = T.cls && by[T.cls] ? `<h3 style="margin-top:14px">${esc(clsName(T.cls))} 순위</h3><table class="ttbl"><thead><tr><th>순위</th><th>학생</th><th>최고 점수</th><th>깬 단계</th><th>성공</th><th>도전</th></tr></thead><tbody>${by[T.cls].slice().sort((a, b) => b.best - a.best).map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.num + ' ' + r.name)}</td><td>${r.best}점</td><td>${r.cl}/4</td><td>${r.hits}개</td><td>${r.plays}번</td></tr>`).join('')}</tbody></table>` : '';
+  return `<section class="panel" style="margin-top:14px"><h3>🌏 자전 · 별 관측 미션 게임 · 반별 최고 점수</h3><div class="tbl-wrap"><table class="ttbl"><thead><tr><th>반</th><th>최고 점수</th><th>학생</th><th>참여</th><th>반 평균(각자 최고)</th></tr></thead><tbody>${tops}</tbody></table>${sel}</div><p class="note">게임 점수는 임무 성적과 따로 시트의 '일주운동 게임 현황' 탭에 모여요. 반을 누르면 그 반 순위가 보여요.</p></section>`;
 }
-// 교사 화면: 우리 반 합동 미션 (반 학생들이 맞힌 소행성 수를 모두 더해 목표까지 게이지로)
+// 교사 화면: 우리 반 합동 미션 (반 학생들이 관측에 성공한 수를 모두 더해 목표까지 게이지로)
 function teamBox(T, clsName) {
   const D = T.game; if (!D || !D.rows.length) return '';
-  const h = D.headers, iN = h.indexOf('학번'), iH = h.indexOf('요격 수'); if (iH < 0) return '';
+  const h = D.headers, iN = h.indexOf('학번'), iH = ['성공 수', '관측 수', '요격 수'].map(k => h.indexOf(k)).find(i => i >= 0); if (iH == null) return '';
   if (!T.goal) { let v = 0; try { v = +localStorage.getItem('dm-goal'); } catch (e) {} T.goal = v >= 10 ? v : 300; }
   const goal = T.goal, by = {};
   D.rows.forEach(r => { const n = String(r[iN] || ''), c = n.length > 2 ? n.slice(0, -2) : ''; if (!c) return; const b = by[c] = by[c] || { s: 0, n: 0 }; b.s += +r[iH] || 0; b.n++; });
   const ks = Object.keys(by).sort((a, b) => a.localeCompare(b, 'ko', { numeric: true }));
   const bar = (c, big) => { const b = by[c], p = Math.min(100, Math.round(b.s / goal * 100)), done = b.s >= goal; return `<div class="trow${big ? ' big' : ''}"><b>${esc(clsName(c))}</b><div class="tg${done ? ' full' : ''}"><i style="width:${p}%"></i></div><span>${b.s} / ${goal}개${done ? ' 🎉 달성!' : ` (${p}%)`}</span><small>${b.n}명 참여</small></div>`; };
-  return `<section class="panel team" style="margin-top:14px"><h3>🤝 우리 반 합동 미션 · 소행성 ${goal}개 요격!</h3>
+  return `<section class="panel team" style="margin-top:14px"><h3>🤝 우리 반 합동 미션 · 별 ${goal}번 관측 성공!</h3>
 ${T.cls && by[T.cls] ? bar(T.cls, true) : ''}${ks.map(c => bar(c)).join('')}
 <div class="row" style="margin-top:10px"><label>목표 <input id="tgoal" type="number" min="10" max="99999" value="${goal}" style="width:110px"> 개</label><button class="btn small ghost" data-act="tgoal">목표 바꾸기</button><button class="btn small${T.auto ? '' : ' ghost'}" data-act="tauto">${T.auto ? '⏱ 자동 새로고침 켜짐 (30초마다)' : '⏱ 30초마다 자동 새로고침'}</button></div>
-<p class="note">학생들이 게임에서 맞힌 소행성(3단계 성공 포함)을 반별로 모두 더해요. TV에 띄워 두고 자동 새로고침을 켜면 수업 중에 게이지가 차오르는 것을 함께 볼 수 있어요.</p></section>`;
+<p class="note">학생들이 자전 · 별 관측 미션에서 성공한 수(소행성 요격·망원경 예측·사진 판독)를 반별로 모두 더해요. TV에 띄워 두고 자동 새로고침을 켜면 수업 중에 게이지가 차오르는 것을 함께 볼 수 있어요.</p></section>`;
 }
 function gGo(lv) { if (G) cancelAnimationFrame(G.raf); gNew(lv); render(); G.raf = requestAnimationFrame(gLoop); }
 function viewGame() {
-  const cl = state.game.cleared, sb = state.game.sb || [], mute = `<button class="btn ghost small" data-act="gmute" title="효과음 켜기/끄기">${ui.mute ? '🔇 소리 꺼짐' : '🔊 소리 켜짐'}</button>`;
-  const head = `<div class="top"><button class="btn ghost small" data-act="enter" data-v="map">← 임무 목록</button><span class="title" style="font-size:24px">🚀 보너스: 자전 지구 발사대</span><span class="grow"></span>${mute}<span class="pill">깬 단계 <b>${cl}/3</b></span><span class="pill">🏆 내 최고 <b>${state.game.best || 0}점</b></span></div>`;
-  const team = `<p class="gteam">🤝 <b>우리 반 합동 미션</b>: 반 친구들이 막은 소행성을 모두 더해 목표에 도전해요. 내가 막은 소행성 <b>${state.game.hits || 0}개</b></p>`;
+  const g = gData(), cl = g.cleared, sb = g.sb, mute = `<button class="btn ghost small" data-act="gmute" title="효과음 켜기/끄기">${ui.mute ? '🔇 소리 꺼짐' : '🔊 소리 켜짐'}</button>`;
+  const head = `<div class="top"><button class="btn ghost small" data-act="enter" data-v="map">← 임무 목록</button><span class="title" style="font-size:24px">🌏 보너스: 자전 · 별 관측 미션</span><span class="grow"></span>${mute}<span class="pill">깬 단계 <b>${cl}/4</b></span><span class="pill">🏆 내 최고 <b>${g.best || 0}점</b></span></div>`;
+  const team = `<p class="gteam">🤝 <b>우리 반 합동 미션</b>: 반 친구들이 성공한 수(요격 + 관측)를 모두 더해 목표에 도전해요. 내가 성공한 수 <b>${g.hits || 0}번</b></p>`;
   if (!G) {
     const open = tester() ? 3 : Math.min(cl, 3), lv = gLevel();
-    return head + `<section class="panel" style="max-width:720px;margin:0 auto"><p>북극 위에서 내려다본 지구예요. 지구가 <b>시계 반대 방향(서 → 동)</b>으로 돌면 우리나라 발사대도 함께 돌아요. 지구로 다가오는 소행성을, 우리나라가 정면으로 마주 볼 때 로켓을 쏴서 막아요!</p>
+    return head + `<section class="panel" style="max-width:760px;margin:0 auto"><p><b>1·2단계</b>는 북극 위에서 내려다본 지구예요. 지구가 <b>서 → 동</b>으로 자전하면 우리나라 발사대도 함께 돌아요. 우리나라가 소행성을 정면으로 마주 볼 때 로켓을 쏴서 막아요!</p><p style="margin-top:6px"><b>3·4단계</b>는 우리나라에서 올려다본 밤하늘이에요. 지구가 자전해서 별은 <b>1시간에 15°씩 동 → 서</b>로 움직여요(일주 운동).</p>
 <h3 style="margin-top:12px">단계 고르기</h3>
-<div class="lvls">${G_LEVELS.map((L, i) => `<button class="lvl${on(i === lv)}" data-act="glv" data-v="${i}"${i > open ? ' disabled' : ''}><b>${i > open ? '🔒 ' : i < cl ? '✅ ' : ''}${L.name}${sb[i] ? ` · 최고 ${sb[i]}점` : ''}</b><span>${i > open ? (i === 3 ? '3단계를 깨면 열려요.' : '앞 단계를 깨면 열려요.') : L.desc}</span></button>`).join('')}</div>
+<div class="lvls">${LV.map((L, i) => `<button class="lvl${on(i === lv)}" data-act="glv" data-v="${i}"${i > open ? ' disabled' : ''}><b>${i > open ? '🔒 ' : i < cl ? '✅ ' : ''}${L.name}${sb[i] ? ` · 최고 ${sb[i]}점` : ''}</b><span>${i > open ? '앞 단계를 깨면 열려요.' : L.desc}</span></button>`).join('')}</div>
 <div class="row"><button class="btn" data-act="gstart">🚀 시작</button></div>
-<div class="fb ex" style="margin-top:10px">🎯 <b>점수 얻는 법</b><br>· 소행성 <b>정중앙</b>을 맞히면 <b>PERFECT</b> (1단계 150점 · 2단계 200점), 조금 비껴 맞히면 <b>GOOD</b> (100점 · 130점)<br>· 가끔 나타나는 <b>☄️ 황금 혜성</b>은 500점! 금방 사라지니 우리나라가 제때 그 아래에 갈 수 있을지 판단해요.<br>· 연속으로 맞히면 <b>콤보</b>: 3연속부터 점수 ×2, 6연속부터 ×3. 빗나가면 콤보가 끊겨요.<br>· 3단계는 명령 시각과 <b>15분 이내</b>면 PERFECT 300점, <b>30분 이내</b>면 GOOD 180점 (× 콤보)<br>· 무한 도전은 지구가 빨라질수록 점수도 커져요.</div>
-<p class="note">전적: ${state.game.plays}판 · 깬 단계 ${cl}/3 · 내 최고 점수 <b>${state.game.best || 0}점</b> (단계마다 가장 잘한 점수를 더해요: ${G_LEVELS.map((L, i) => `${i < 3 ? i + 1 + '단계' : '무한'} ${sb[i] || 0}`).join(' + ')})</p>${team}${rankBox()}</section>`;
+<div class="fb ex" style="margin-top:10px">🎯 <b>점수 얻는 법</b><br>· 1·2단계: 소행성 <b>정중앙</b>을 맞히면 <b>PERFECT</b> (1단계 150점 · 2단계 200점), 조금 비껴 맞히면 <b>GOOD</b> (100점 · 130점). 가끔 나타나는 <b>☄️ 황금 혜성</b>은 500점!<br>· 3단계: ○시간 뒤 자리와 <b>10분 거리</b> 안이면 <b>PERFECT</b> 300점, <b>30분 거리</b> 안이면 <b>GOOD</b> 180점<br>· 4단계: 정답 200점 (틀리면 5초 줄어요)<br>· 연속으로 맞히면 <b>콤보</b>: 3연속부터 ×2, 6연속부터 ×3. 틀리면 끊겨요.</div>
+<p class="note">전적: ${g.plays}판 · 깬 단계 ${cl}/4 · 내 최고 점수 <b>${g.best || 0}점</b> (단계마다 가장 잘한 점수를 더해요: ${LV.map((L, i) => `${i + 1}단계 ${sb[i] || 0}`).join(' + ')})</p>${team}${rankBox()}</section>`;
   }
-  const L = G_LEVELS[G.lv], back = '<div class="row" style="margin-top:12px"><button class="btn ghost small" data-act="gagain">🔁 다시 하기</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button></div>';
-  const tip = L.clock
-    ? '<div class="fb ex" style="margin-top:10px">💡 지구는 <b>시계 반대 방향(서 → 동)</b>으로 1시간에 <b>15°</b>씩 돌아요. 바깥 눈금 한 칸이 1시간이에요. 글씨가 있는 곳(밤 12시·오전 6시·낮 12시·오후 6시)에서 눈금을 세어 보세요.</div>'
-    : '<div class="fb ex" style="margin-top:10px">💡 북극 위에서 보면 지구는 <b>시계 반대 방향(서 → 동)</b>으로 돌아요. 바깥 눈금 한 칸이 1시간(15°)이고, 바깥 글씨는 우리나라가 그쪽을 향할 때의 시각이에요.</div>';
-  const fire = '<button class="btn" data-act="gshoot" style="width:100%;font-size:22px;margin-top:8px">🚀 발사!</button><p class="note">화면을 눌러도 발사돼요. (키보드: 스페이스바)</p>';
-  const side = L.clock ? `<h3>${L.name}</h3>${fire}<div class="gord" id="gOrd"></div>${tip}${back}` : `<h3>${L.name}</h3><p>${L.desc}</p>${fire}${tip}${back}`;
-  const stat = `<p class="gstat">${L.clock ? '🎯 성공' : '🪨 요격'} <b>${G.hits}</b> · ✨ PERFECT <b>${G.perfect}</b> · 🔥 최대 콤보 <b>${G.maxCombo}</b>${L.endless ? ` · ⏱ 버틴 시간 <b>${Math.floor(G.el)}초</b> · ⚡ 최고 속도 <b>×${G.speed.toFixed(1)}</b>` : ''}</p>`;
-  const tm = `<p class="gteam">🤝 합동 미션에 소행성 <b>${G.hits}개</b>를 보탰어요! (내가 막은 소행성 모두 ${state.game.hits || 0}개)</p>`;
+  const L = LV[G.lv], q = G.q, launch = L.kind === 'launch', back = '<div class="row" style="margin-top:12px"><button class="btn ghost small" data-act="gagain">🔁 다시 하기</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button></div>';
+  let side = `<h3>${L.name}</h3>`;
+  if (launch) {
+    side += `<p>${L.desc}</p><button class="btn" data-act="gshoot" style="width:100%;font-size:22px;margin-top:8px">🚀 발사!</button><p class="note">화면을 눌러도 발사돼요. (키보드: 스페이스바)</p>`
+      + `<div class="fb ex" style="margin-top:10px">💡 북극 위에서 보면 지구는 <b>시계 반대 방향(서 → 동)</b>으로 돌아요. 바깥 눈금 한 칸이 1시간(15°)이고, 바깥 글씨는 우리나라가 그쪽을 향할 때의 시각이에요.</div>${back}`;
+  } else {
+    if (!q) side += '<p class="muted">첫 관측을 준비하고 있어요…</p>';
+    else {
+      side += q.kind === 'pred' ? `<p class="gq2">🔭 지금 <b>${O_NAME[q.az0]}쪽 하늘</b>이에요. <b>${q.N}시간 뒤</b> ★별은 어디에 있을까요?</p><p class="muted">노란 점선이 ★별이 지나는 길이에요. 주황색은 1시간 전 → 지금 (1시간 = 15°). 길 위에서 ${q.N}시간 뒤 자리를 눌러요.</p>`
+        : q.sub === 'dir' ? '<p class="gq2">📷 이 별 궤적 사진은 <b>어느 쪽 하늘</b>을 찍었을까요?</p>'
+        : q.sub === 'time' ? '<p class="gq2">📷 북쪽 하늘 사진이에요. <b>몇 시간 동안</b> 찍었을까요?</p><p class="muted">노란 궤적이 북극성을 중심으로 몇 도 돌았는지 바깥 원의 눈금(한 칸 15°)으로 세어 봐요.</p>'
+        : `<p class="gq2">📷 ${O_NAME[q.az0]}쪽 하늘 사진이에요. 노란 궤적의 별은 <b>어느 쪽으로</b> 움직였을까요?</p>`;
+      if (q.opts) side += `<div class="gopts${q.opts.length === 2 ? ' two' : ''}">${q.opts.map((o, i) => `<button class="chip big${q.res && i === q.ans ? ' on' : ''}${q.res && i === q.pick && !q.res.ok ? ' bad' : ''}" data-act="gans" data-v="${i}"${G.phase !== 'ask' ? ' disabled' : ''}>${i + 1}) ${o}</button>`).join('')}</div>`;
+      if (q.res) side += `<div class="fb ${q.res.ok ? 'ok' : 'bad'}" style="margin-top:8px">${q.res.txt}</div><div class="fb ex">💡 ${q.res.ex}</div><p class="note">곧 다음 관측이 나와요. (그림을 누르면 바로 다음으로)</p>`;
+      else if (q.opts) side += '<p class="note">키보드 1~4로도 고를 수 있어요.</p>';
+    }
+    side += `<div class="fb ex" style="margin-top:10px">💡 별은 <b>1시간에 15°</b>씩 동 → 서로 움직여요. 동쪽: ↗ 비스듬히 떠오름 · 남쪽: 왼쪽 → 오른쪽 · 서쪽: ↘ 비스듬히 짐 · 북쪽: 북극성 중심 ↺</div>${back}`;
+  }
+  const stat = `<p class="gstat">${launch ? '🪨 요격' : '🔭 성공'} <b>${G.hits}</b> · ${launch ? '💨 빗나감' : '❌ 실패'} <b>${G.miss}</b>${G.perfect ? ` · 🎯 PERFECT <b>${G.perfect}</b>` : ''} · 🔥 최대 콤보 <b>${G.maxCombo}</b></p>`;
+  const tm = `<p class="gteam">🤝 합동 미션에 성공 <b>${G.hits}번</b>을 보탰어요! (내가 성공한 수 모두 ${g.hits || 0}번)</p>`;
   const again = '<button class="btn ghost small" data-act="gagain">🔁 다시 하기</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button>';
   let over = '';
   if (G.over) {
-    const O = G.over;
-    if (L.endless) over = `<h2>🔥 무한 도전 끝!</h2><p>${O.lvUp ? '🎉 무한 도전 내 최고 기록이에요!' : `무한 도전 내 최고 기록 ${sb[3] || 0}점`}</p>${stat}${gScoreLine()}${tm}<div class="row"><button class="btn" data-act="gagain">🔁 한 번 더!</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button></div>`;
-    else if (O.win) over = `<h2>🎉 ${L.name} 성공!</h2><p>${G.lv === 0 ? '지구가 서 → 동으로 돌면서 우리나라가 소행성들을 차례로 마주 보았어요.' : G.lv === 1 ? '우리나라는 오후 6시쯤 밤으로 들어가고 오전 6시쯤 낮으로 나와요. 낮과 밤은 지구의 자전 때문에 생겨요.' : '지구는 1시간에 15°씩, 시계 반대 방향으로 돌아요. 그래서 우리나라가 향하는 방향을 보면 시각을 알 수 있어요.'}</p>${stat}${gScoreLine()}${tm}
-<div class="row">${G.lv < 2 ? '<button class="btn" data-act="gup">다음 단계 →</button>' : '<p>🏆 3단계까지 모두 깼어요! 자전 박사 인정!</p><button class="btn" data-act="gup">🔥 무한 도전 →</button>'}${again}</div>`;
-    else over = `<h2>😢 아쉬워요!</h2><p>${L.clock ? `${G.hits}번 성공. ${L.goal}번 이상 맞히면 성공이에요. 글씨가 있는 시각에서 눈금 칸을 세어 보세요.` : `${G.hits}개 요격. ${L.goal}개 이상 맞히면 성공이에요. 우리나라가 소행성을 정면으로 마주 보는 순간을 노려 보세요.`}</p>${stat}${gScoreLine()}${tm}<div class="row"><button class="btn" data-act="gagain">🔁 다시 도전</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button></div>`;
+    const O = G.over, sl = `<p class="gsc">이번 점수 <b>${O.score}점</b> · 내 최고 점수(단계별 최고의 합) <b>${g.best}점</b>${O.up ? ' 🎉 기록 갱신!' : ''}</p>`;
+    const good = ['지구가 서 → 동으로 돌면서 우리나라가 소행성들을 차례로 마주 보았어요.', '우리나라는 오후 6시쯤 밤으로 들어가고 오전 6시쯤 낮으로 나와요. 낮과 밤은 지구의 자전 때문에 생겨요.', '별이 1시간에 15°씩, 그쪽 하늘의 길을 따라 움직인다는 걸 이용했어요.', '별 궤적 사진만 보고도 방향과 시간을 읽어 냈어요. 🏆 4단계까지 모두 깼어요! 천체 관측 박사!'][G.lv];
+    const bad = launch ? `${G.hits}개 요격. ${L.goal}개 이상 맞히면 성공이에요. 우리나라가 소행성을 정면으로 마주 보는 순간을 노려 보세요.` : `${G.hits}번 성공. ${L.goal}번 이상 성공하면 ${G.lv < 3 ? '다음 단계가 열려요' : '성공이에요'}.`;
+    if (O.win) over = `<h2>🎉 ${L.name} 성공!</h2><p>${good}</p>${stat}${sl}${tm}<div class="row">${G.lv < 3 ? '<button class="btn" data-act="gup">다음 단계 →</button>' : ''}${again}</div>`;
+    else over = `<h2>😢 아쉬워요!</h2><p>${bad}</p>${stat}${sl}${tm}<div class="row"><button class="btn" data-act="gagain">🔁 다시 도전</button><button class="btn ghost small" data-act="gmenu">단계 고르기</button></div>`;
     over = `<div class="gover">${over}</div>`;
   }
-  return head + `<div class="lesson"><div><div class="ghud" id="gHud"></div><div class="gtime"><i id="gBar"></i></div><div class="gwrap"><canvas id="gCanvas" width="${G_W}" height="${G_W}" data-act="gshoot" aria-label="자전 지구 발사대 게임 화면"></canvas>${over}</div><p class="gmsg" id="gMsg"></p></div><aside class="panel">${side}${G.over ? rankBox() : ''}</aside></div>`;
+  if (launch) return head + `<div class="lesson"><div><div class="ghud" id="gHud"></div><div class="gtime"><i id="gBar"></i></div><div class="gwrap"><canvas id="gCanvas" width="${G_W}" height="${G_W}" data-act="gshoot" aria-label="자전 지구 발사대 게임 화면"></canvas>${over}</div><p class="gmsg" id="gMsg"></p></div><aside class="panel">${side}${G.over ? rankBox() : ''}</aside></div>`;
+  return head + `<div class="lesson obs"><div><div class="ghud" id="gHud"></div><div class="gtime"><i id="gBar"></i></div><div class="gwrap obs"><canvas id="gCanvas" width="${O_W}" height="${O_H}" data-act="gtap" aria-label="밤하늘 관측 화면"></canvas>${over}</div></div><aside class="panel">${side}${G.over ? rankBox() : ''}</aside></div>`;
 }
 
 /* ───────── 그리기 ───────── */
@@ -1909,7 +2096,9 @@ app.addEventListener('click', async e => {
   else if (a === 'submit') submit();
   else if (a === 'glv') { ui.gLv = +v; render(); }
   else if (a === 'gstart') gGo(gLevel());
+  else if (a === 'gtap') oTap(e, t);
   else if (a === 'gshoot') gShoot();
+  else if (a === 'gans') oAnswer(+v);
   else if (a === 'gmute') { ui.mute = !ui.mute; try { localStorage.setItem('dm-mute', ui.mute ? '1' : '0'); } catch (err) {} render(); }
   else if (a === 'tgoal') { const el = document.getElementById('tgoal'), n = Math.round(+(el && el.value)); if (n >= 10) { ui.teacher.goal = n; try { localStorage.setItem('dm-goal', String(n)); } catch (err) {} } render(); }
   else if (a === 'tauto') {
@@ -1923,7 +2112,7 @@ app.addEventListener('click', async e => {
 });
 document.addEventListener('keydown', e => {
   if (state.view !== 'game' || !G || G.over) return;
-  if (e.code === 'Space') { e.preventDefault(); gShoot(); }
+  if (e.code === 'Space' && LV[G.lv].kind === 'launch') { e.preventDefault(); gShoot(); }
 });
 async function startMission(btn) {
   const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
@@ -1957,7 +2146,7 @@ async function hello() {
   ui.server = !!(out && out.lessons); ui.rankOk = !!(out && out.rank);
   return ui.server;
 }
-const COLS = ['임무 1 자전', '임무 2 천구', '임무 3 하늘 관측', '임무 4 확인 퀴즈', '자전 문제 (한 번에)', '천구 문제 (한 번에)', '하늘 관측 (한 번에)', '확인 퀴즈 (한 번에)', '틀린 예측', '보너스 발사대', '재도전 (임무 1·2·3·4)'];
+const COLS = ['임무 1 자전', '임무 2 천구', '임무 3 하늘 관측', '임무 4 확인 퀴즈', '자전 문제 (한 번에)', '천구 문제 (한 번에)', '하늘 관측 (한 번에)', '확인 퀴즈 (한 번에)', '틀린 예측', '보너스 게임', '재도전 (임무 1·2·3·4)'];
 function progressVals() {
   const MV = ['m1', 'm2', 'm3', 'm4'];
   const stat = (i, a, b) => MISSIONS[i].done() ? '완료' : failed(MV[i]) ? '재도전 필요' : a ? `진행 ${a}/${b}` : '-';
@@ -1967,7 +2156,7 @@ function progressVals() {
   return [
     stat(0, okCount(M1Q, state.m1.q), M1Q.length), stat(1, okCount(M2Q, state.m2.q), M2Q.length),
     stat(2, m3ok, M3.length), stat(3, okCount(QUIZ, state.m4.q), QUIZ.length),
-    `${firstOk(M1Q, state.m1.q)}/${M1Q.length}`, `${firstOk(M2Q, state.m2.q)}/${M2Q.length}`, `${pred}/${M3.length}`, `${firstOk(QUIZ, state.m4.q)}/${QUIZ.length}`, wrong, `${state.game.cleared}/3단계`,
+    `${firstOk(M1Q, state.m1.q)}/${M1Q.length}`, `${firstOk(M2Q, state.m2.q)}/${M2Q.length}`, `${pred}/${M3.length}`, `${firstOk(QUIZ, state.m4.q)}/${QUIZ.length}`, wrong, `${gData().cleared}/4단계`,
     MV.map(m => state[m].tries || 0).join(' · ')
   ];
 }
